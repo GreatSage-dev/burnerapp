@@ -195,16 +195,11 @@
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
-      transition: transform 90ms ease, border-color 140ms ease, background 140ms ease;
-    }
-
-    .btn:hover:not(:disabled) {
-      border-color: var(--border-strong);
-      background: #222226;
+      transition: transform 140ms cubic-bezier(0.23, 1, 0.32, 1), border-color 140ms ease, background 140ms ease;
     }
 
     .btn:active:not(:disabled) {
-      transform: scale(0.985);
+      transform: scale(0.97);
     }
 
     .btn:focus-visible {
@@ -217,15 +212,16 @@
       cursor: not-allowed;
     }
 
+    .btn-preset-active {
+      background: var(--accent-wafer-dim);
+      border-color: rgba(249, 115, 22, 0.65);
+      color: var(--accent-wafer);
+    }
+
     .btn-primary {
       background: var(--accent-wafer);
       border-color: var(--accent-wafer);
       color: #09090b;
-    }
-
-    .btn-primary:hover:not(:disabled) {
-      background: #fb923c;
-      border-color: #fb923c;
     }
 
     .btn-emerald {
@@ -234,20 +230,33 @@
       color: var(--accent-emerald);
     }
 
-    .btn-emerald:hover:not(:disabled) {
-      background: rgba(16, 185, 129, 0.24);
-      border-color: var(--accent-emerald);
-    }
-
     .btn-danger {
       background: var(--accent-rose-dim);
       border-color: rgba(244, 63, 94, 0.45);
       color: var(--accent-rose);
     }
 
-    .btn-danger:hover:not(:disabled) {
-      background: rgba(244, 63, 94, 0.24);
-      border-color: var(--accent-rose);
+    @media (hover: hover) and (pointer: fine) {
+      .btn:hover:not(:disabled) {
+        border-color: var(--border-strong);
+        background: #222226;
+      }
+      .btn-preset-active:hover:not(:disabled) {
+        background: rgba(249, 115, 22, 0.22);
+        border-color: var(--accent-wafer);
+      }
+      .btn-primary:hover:not(:disabled) {
+        background: #fb923c;
+        border-color: #fb923c;
+      }
+      .btn-emerald:hover:not(:disabled) {
+        background: rgba(16, 185, 129, 0.24);
+        border-color: var(--accent-emerald);
+      }
+      .btn-danger:hover:not(:disabled) {
+        background: rgba(244, 63, 94, 0.24);
+        border-color: var(--accent-rose);
+      }
     }
 
     .btn-sm {
@@ -404,6 +413,18 @@
     @keyframes shimmer {
       from { background-position: 200% 0; }
       to { background-position: -200% 0; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .skeleton-line {
+        animation: none;
+      }
+      .btn {
+        transition: border-color 120ms ease, background 120ms ease;
+      }
+      .btn:active:not(:disabled) {
+        transform: none;
+      }
     }
 
     .manifest-bar {
@@ -609,7 +630,7 @@
     <section class="command-bar" aria-label="Task launcher">
       <div class="preset-row">
         <div class="preset-buttons">
-          <button class="btn btn-primary" type="button" data-scenario="repo-triage">
+          <button class="btn" type="button" data-scenario="repo-triage">
             1. Repo Bug &amp; Test Fixer (Dev)
           </button>
           <button class="btn" type="button" data-scenario="bill-splitter">
@@ -629,6 +650,7 @@
           id="prompt-input"
           class="prompt-input"
           type="text"
+          aria-label="Task prompt for spawning a BurnerApp"
           placeholder="Describe a local task to spawn a scoped 1-second micro-app..."
           value="Inspect my local auth repo for failing tests and unused packages, and give me switches to patch and re-verify it."
         />
@@ -636,8 +658,8 @@
       </form>
 
       <div id="byok-drawer" class="byok-drawer hidden">
-        <span style="font-size:12px;color:var(--text-secondary)">Optional Cerebras API Key (in-memory only, never saved):</span>
-        <input id="byok-input" class="prompt-input mono" style="max-width:340px;padding:6px 10px;font-size:12px;" type="password" placeholder="csk-..." />
+        <label for="byok-input" style="font-size:12px;color:var(--text-secondary)">Optional Cerebras API Key (in-memory only, never saved):</label>
+        <input id="byok-input" class="prompt-input mono" style="max-width:340px;padding:6px 10px;font-size:12px;" type="password" aria-label="Optional Cerebras API Key" placeholder="csk-..." />
         <button id="byok-save-btn" class="btn btn-sm btn-emerald" type="button">Use Live Key</button>
       </div>
     </section>
@@ -913,25 +935,26 @@ On standard ~45 tok/s GPU inference, generating a 1,620-token wired UI takes ~36
       document.querySelectorAll("[data-action-id]").forEach((btn) => {
         btn.addEventListener("click", () => {
           const act = spec.actions.find((a) => a.id === btn.dataset.actionId);
-          if (act) invokeToolCall(act.toolName, act.params);
+          if (act) invokeToolCall(act.toolName, act.params, btn);
         });
       });
 
       document.querySelectorAll("[data-probe-id]").forEach((btn) => {
         btn.addEventListener("click", () => {
           const probe = (spec.adversarialActions || []).find((p) => p.id === btn.dataset.probeId);
-          if (probe) invokeToolCall(probe.toolName, probe.params);
+          if (probe) invokeToolCall(probe.toolName, probe.params, btn);
         });
       });
 
       $("burn-app-btn")?.addEventListener("click", burnActiveApp);
-      $("probe-after-burn-btn")?.addEventListener("click", async () => {
+      $("probe-after-burn-btn")?.addEventListener("click", async (e) => {
+        const triggerBtn = e.currentTarget;
         if (!isBurned && state.activeSession) {
           await burnActiveApp();
         }
         const firstAct = spec.actions[0];
         if (firstAct) {
-          await invokeToolCall(firstAct.toolName, firstAct.params);
+          await invokeToolCall(firstAct.toolName, firstAct.params, triggerBtn);
         }
       });
     }
@@ -974,10 +997,17 @@ On standard ~45 tok/s GPU inference, generating a 1,620-token wired UI takes ~36
       renderLedger(status.auditLog || []);
     }
 
+    function setActivePresetButton(scenarioId) {
+      document.querySelectorAll("[data-scenario]").forEach((btn) => {
+        btn.classList.toggle("btn-preset-active", btn.dataset.scenario === scenarioId);
+      });
+    }
+
     async function spawnScenario({ scenarioId = "", prompt = "" } = {}) {
       if (state.isSpawning) return;
       state.isSpawning = true;
       hideError();
+      setActivePresetButton(scenarioId);
       renderLoadingRightPane();
 
       try {
@@ -999,6 +1029,10 @@ On standard ~45 tok/s GPU inference, generating a 1,620-token wired UI takes ~36
         state.activeCompiled = data.compiled;
         state.lastToolOutcome = null;
 
+        if (data.compiled?.prompt) {
+          $("prompt-input").value = data.compiled.prompt;
+        }
+        setActivePresetButton(data.compiled?.spec?.scenarioId || scenarioId);
         updateStatusHeader(data.status);
         startGpuCrawl(data.compiled);
         renderRightPane();
@@ -1009,9 +1043,14 @@ On standard ~45 tok/s GPU inference, generating a 1,620-token wired UI takes ~36
       }
     }
 
-    async function invokeToolCall(toolName, params) {
+    async function invokeToolCall(toolName, params, triggerBtn = null) {
       if (!state.activeSession) return;
       hideError();
+      const prevLabel = triggerBtn ? triggerBtn.textContent : "";
+      if (triggerBtn) {
+        triggerBtn.disabled = true;
+        triggerBtn.textContent = "Running...";
+      }
       try {
         const res = await fetch("/api/tool-call", {
           method: "POST",
@@ -1028,6 +1067,10 @@ On standard ~45 tok/s GPU inference, generating a 1,620-token wired UI takes ~36
         if (data.auditLog) renderLedger(data.auditLog);
         renderRightPane();
       } catch (err) {
+        if (triggerBtn) {
+          triggerBtn.disabled = false;
+          triggerBtn.textContent = prevLabel;
+        }
         showError(`Tool call failed: ${err.message}`);
       }
     }
@@ -1097,7 +1140,7 @@ On standard ~45 tok/s GPU inference, generating a 1,620-token wired UI takes ~36
     fetch("/api/status")
       .then((r) => r.json())
       .then((status) => updateStatusHeader(status))
-      .catch(() => {});
+      .catch((err) => showError(`Unable to load initial cockpit status: ${err.message}`));
   </script>
 </body>
 </html>
