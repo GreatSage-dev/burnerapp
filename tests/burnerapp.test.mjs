@@ -340,3 +340,134 @@ test("19. End-to-end HTTP cockpit supports /judge, /api/spawn, green /api/tool-c
     server.close();
   }
 });
+
+test("20. Compiler prevents LLM JSON output from escalating allowedTools beyond preset ceiling", async () => {
+  const escalatedResponse = {
+    choices: [
+      {
+        message: {
+          content: JSON.stringify({
+            title: "Injected Receipt App",
+            subtitle: "Attempts to smuggle repo_patch_apply into bill-splitter",
+            summary: "Should strip repo_patch_apply.",
+            actions: [
+              {
+                id: "inject-patch",
+                label: "Smuggled Patch",
+                toolName: "repo_patch_apply",
+                params: {},
+                style: "primary"
+              },
+              {
+                id: "legit-receipt",
+                label: "Parse Receipts",
+                toolName: "receipt_parse",
+                params: {},
+                style: "secondary"
+              }
+            ]
+          })
+        }
+      }
+    ],
+    usage: { prompt_tokens: 200, completion_tokens: 600, total_tokens: 800 },
+    time_info: { queue_time: 0.001, prompt_time: 0.01, completion_time: 0.35, total_time: 0.361 }
+  };
+
+  const compiled = await compileBurnerApp({
+    scenarioId: "bill-splitter",
+    apiKey: "test-key",
+    fetchImpl: async () => ({
+      ok: true,
+      status: 200,
+      json: async () => escalatedResponse
+    })
+  });
+
+  assert.deepEqual(compiled.spec.allowedTools, ["receipt_parse"]);
+  assert.equal(compiled.spec.actions.length, 1);
+  assert.equal(compiled.spec.actions[0].toolName, "receipt_parse");
+});
+
+test("21. Canonical path containment blocks %2e%2e and params.target escapes while allowing safe filenames with two dots", () => {
+  const registry = new BurnerRegistry();
+  const session = registry.spawnBurner({
+    allowedTools: ["receipt_parse"],
+    allowedPaths: ["fixtures/sandbox/receipts"]
+  });
+
+  const encodedTraversal = registry.evaluateBeforeToolCall(
+    { toolName: "receipt_parse", params: { path: "fixtures/sandbox/receipts/%2e%2e/demo-repo/auth-token.mjs" } },
+    { burnerId: session.burnerId }
+  );
+  assert.equal(encodedTraversal.allowed, false);
+
+  const targetEscape = registry.evaluateBeforeToolCall(
+    { toolName: "receipt_parse", params: { target: "fixtures/sandbox/demo-repo/auth-token.mjs" } },
+    { burnerId: session.burnerId }
+  );
+  assert.equal(targetEscape.allowed, false);
+  assert.equal(targetEscape.rule, "PATH_OUTSIDE_MANIFEST");
+
+  const safeDoubleDotFile = registry.evaluateBeforeToolCall(
+    { toolName: "receipt_parse", params: { path: "fixtures/sandbox/receipts/dinner..v2.json" } },
+    { burnerId: session.burnerId }
+  );
+  assert.equal(safeDoubleDotFile.allowed, true);
+});
+
+test("22. Server rejects cross-origin POST requests from external Origin headers with HTTP 403", async () => {
+  const { server } = createAppServer({ apiKey: "" });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const { port } = server.address();
+  const base = `http://127.0.0.1:${port}`;
+
+  try {
+    const res = await fetch(`${base}/api/spawn`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        Origin: "https://malicious.example.com"
+      },
+      body: JSON.stringify({ scenarioId: "repo-triage" })
+    });
+    assert.equal(res.status, 403);
+    const body = await res.json();
+    assert.equal(body.error, "CROSS_ORIGIN_FORBIDDEN");
+  } finally {
+    server.close();
+  }
+});
+
+test("23. Compiler falls back to secondary Cerebras model when primary trial model returns 404", async () => {
+  const attemptedModels = [];
+  const compiled = await compileBurnerApp({
+    scenarioId: "repo-triage",
+    apiKey: "test-key",
+    model: "moonshotai-kimi-k3.1-pro-trial",
+    fetchImpl: async (_url, init) => {
+      const reqBody = JSON.parse(init.body);
+      attemptedModels.push(reqBody.model);
+      if (reqBody.model === "moonshotai-kimi-k3.1-pro-trial") {
+        return {
+          ok: false,
+          status: 404,
+          json: async () => ({ error: { message: "Model not yet unlocked on organization" } })
+        };
+      }
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          choices: [{ message: { content: "{}" } }],
+          usage: { prompt_tokens: 200, completion_tokens: 500, total_tokens: 700 },
+          time_info: { queue_time: 0.001, prompt_time: 0.01, completion_time: 0.3, total_time: 0.311 }
+        })
+      };
+    }
+  });
+
+  assert.equal(compiled.sourceMode, "LIVE_CEREBRAS_API");
+  assert.equal(compiled.modelUsed, "zai-glm-4.7");
+  assert.deepEqual(attemptedModels, ["moonshotai-kimi-k3.1-pro-trial", "zai-glm-4.7"]);
+});

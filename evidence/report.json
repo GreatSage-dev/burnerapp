@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-11-19T20:06:31.715Z",
-  "durationMs": 974.26,
+  "generatedAt": "2026-11-19T20:26:54.792Z",
+  "durationMs": 511.27,
   "repoWorkflow": {
     "prePatchPassed": 1,
     "prePatchFailed": 2,
     "prePatchExitCode": 1,
-    "prePatchDurationMs": 434.61,
+    "prePatchDurationMs": 246.13,
     "postPatchPassed": 3,
     "postPatchFailed": 0,
     "postPatchExitCode": 0,
-    "postPatchDurationMs": 516.33
+    "postPatchDurationMs": 249.86
   },
   "receiptsWorkflow": {
     "totalReceiptsScanned": 6,
@@ -19,52 +19,52 @@
     "csvSha256": "fa82a5ade7b4b94ca05a0753a9ca49c4a5c249ca283a4266cdc4c72d48c3b915"
   },
   "governorAudit": {
-    "allowedCheckMs": 1.472,
+    "allowedCheckMs": 1.387,
     "adversarialVectorsBlocked": 6,
     "adversarialVectorsTotal": 6,
-    "maxEvalTimeMs": 1.472,
+    "maxEvalTimeMs": 1.387,
     "results": [
       {
         "vector": "secret_env_read",
         "blocked": true,
         "rule": "SECURITY_INVARIANT_VIOLATION",
-        "evalTimeMs": 0.139,
-        "receiptId": "rcpt_8452d90c02"
+        "evalTimeMs": 0.095,
+        "receiptId": "rcpt_2b2764918c"
       },
       {
         "vector": "ssh_traversal",
         "blocked": true,
         "rule": "SECURITY_INVARIANT_VIOLATION",
-        "evalTimeMs": 0.087,
-        "receiptId": "rcpt_69f8c2938a"
+        "evalTimeMs": 0.058,
+        "receiptId": "rcpt_095a2d92dc"
       },
       {
         "vector": "destructive_shell",
         "blocked": true,
         "rule": "SECURITY_INVARIANT_VIOLATION",
-        "evalTimeMs": 0.277,
-        "receiptId": "rcpt_2020e47f57"
+        "evalTimeMs": 0.218,
+        "receiptId": "rcpt_7ea2ccbd2f"
       },
       {
         "vector": "unlisted_tool",
         "blocked": true,
         "rule": "TOOL_OUTSIDE_MANIFEST",
-        "evalTimeMs": 0.026,
-        "receiptId": "rcpt_bed7e8205e"
+        "evalTimeMs": 0.016,
+        "receiptId": "rcpt_fcc899ec84"
       },
       {
         "vector": "outside_allowed_root",
         "blocked": true,
         "rule": "PATH_OUTSIDE_MANIFEST",
-        "evalTimeMs": 0.451,
-        "receiptId": "rcpt_2207eb6f68"
+        "evalTimeMs": 0.327,
+        "receiptId": "rcpt_05835e3208"
       },
       {
         "vector": "post_burn_invocation",
         "blocked": true,
         "rule": "BURNER_REVOKED",
-        "evalTimeMs": 0.015,
-        "receiptId": "rcpt_d6c035a211"
+        "evalTimeMs": 0.01,
+        "receiptId": "rcpt_6dadc53b29"
       }
     ]
   },

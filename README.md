@@ -1,7 +1,7 @@
 # BurnerApp
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-emerald.svg)](LICENSE)
-[![Tests: 19/19 passing](https://img.shields.io/badge/Tests-19%2F19%20passing-brightgreen.svg)](tests/burnerapp.test.mjs)
+[![Tests: 23/23 passing](https://img.shields.io/badge/Tests-23%2F23%20passing-brightgreen.svg)](tests/burnerapp.test.mjs)
 [![Cockpit: /judge](https://img.shields.io/badge/Cockpit-%2Fjudge%20split--screen-f97316.svg)](JUDGES.md)
 
 **Burner phones, for software.** AI agents trap real local work inside endless text chat because generating a live app takes ~40 seconds on GPUs. BurnerApp runs inside OpenClaw Canvas on Kimi K3.1 Pro (`moonshotai-kimi-k3.1-pro-trial`) and Cerebras to spawn a scoped local micro-app in about a second, wire its buttons to real local tools, and burn it when finished. Any unauthorized file, shell, or post-burn call is stopped by an OpenClaw `before_tool_call` capability manifest.
@@ -62,7 +62,7 @@ All numbers below come directly from running `npm run verify` (`evidence/report.
 
 | Check | Measured Output | Source |
 | :--- | :--- | :--- |
-| Full Deterministic Suite (`npm test`) | **19 / 19 passing** (`exit code 0`) | [tests/burnerapp.test.mjs](tests/burnerapp.test.mjs) |
+| Full Deterministic Suite (`npm test`) | **23 / 23 passing** (`exit code 0`) | [tests/burnerapp.test.mjs](tests/burnerapp.test.mjs) |
 | End-to-End Cockpit Smoke (`npm run smoke`) | **2 scenarios + `/rob` + burn PASS** | [scripts/smoke.mjs](scripts/smoke.mjs) |
 | OpenClaw `before_tool_call` Governor | **6 / 6 hostile vectors blocked** (`< 2ms` eval; see report) | [evidence/report.json](evidence/report.json) |
 | Real Local Auth Repo Patch | **`1/3` failing -> `3/3` passing** (`exit code 0`) | [src/tools/local-tools.mjs](src/tools/local-tools.mjs) |
