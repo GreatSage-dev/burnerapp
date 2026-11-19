@@ -4,586 +4,715 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>BurnerApp — 1-Second Disposable Micro-Apps on Cerebras &amp; OpenClaw</title>
-  <meta name="description" content="Spawn 1-second disposable local micro-apps inside OpenClaw Canvas on Cerebras Kimi K3.1 Pro, governed by before_tool_call capability manifests." />
-  <meta name="theme-color" content="#0f0e0d" />
+  <meta name="description" content="Burner phones, for software. Spawn a 1-second local micro-app inside OpenClaw Canvas on Cerebras Kimi K3.1 Pro, governed by a single-use capability manifest." />
+  <meta name="theme-color" content="#101113" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --kiln-obsidian: #0f0e0d;
-      --kiln-chamber: #161513;
-      --kiln-panel: #1d1c19;
-      --kiln-hover: #252320;
-      --kiln-slate: #383530;
-      --kiln-bone: #cbc5b8;
-      --kiln-paper: #efeae0;
-      --kiln-ash: #9d978b;
-      --kiln-stone: #6e695f;
+      --black: #000000;
+      --night: #101113;
+      --ink: #1d1e21;
+      --panel: #222428;
+      --graphite: #2b2d31;
+      --slate: #3b3d40;
+      --stone: #737470;
+      --ash: #969690;
+      --bone: #c4c2b8;
+      --paper: #efefeb;
+      --white: #ffffff;
 
-      --kiln-copper: #ff5500;
-      --kiln-copper-soft: rgba(255, 85, 0, 0.13);
-      --kiln-copper-line: rgba(255, 85, 0, 0.55);
+      /* State colors only (<3% of viewport, never decorative) */
+      --state-ok: #1fc080;
+      --state-warn: #e58817;
+      --state-bad: #ff421c;
 
-      --kiln-mint: #1fc080;
-      --kiln-mint-soft: rgba(31, 192, 128, 0.13);
-      --kiln-mint-line: rgba(31, 192, 128, 0.52);
+      --font-serif: "Instrument Serif", "Times New Roman", serif;
+      --font-grotesk: "Space Grotesk", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      --font-mono: "Space Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
-      --kiln-vermilion: #ff3b24;
-      --kiln-vermilion-soft: rgba(255, 59, 36, 0.13);
-      --kiln-vermilion-line: rgba(255, 59, 36, 0.52);
-
-      --kiln-amber: #f59e0b;
-      --kiln-amber-soft: rgba(245, 158, 11, 0.13);
-
-      --font-display: "Instrument Serif", Georgia, serif;
-      --font-sans: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-
-      --ease-out-cubic: cubic-bezier(0.215, 0.61, 0.355, 1);
-      --banner-h: 2rem;
+      --ease-flip: cubic-bezier(0.215, 0.61, 0.355, 1);
+      --gutter: 2.5rem;
+      --header-h: 7.25rem;
     }
 
-    * {
+    *, *::before, *::after {
       box-sizing: border-box;
     }
 
     html, body {
       margin: 0;
       padding: 0;
-      min-height: 100%;
-      background-color: var(--kiln-obsidian);
-      background-image:
-        repeating-linear-gradient(
-          180deg,
-          rgba(255, 255, 255, 0.018) 0 1px,
-          transparent 1px 3px
-        ),
-        radial-gradient(circle at 82% 0%, rgba(255, 85, 0, 0.09), transparent 44%);
-      color: var(--kiln-paper);
-      font-family: var(--font-sans);
+      min-height: 100dvh;
+      background-color: var(--ink);
+      background-image: repeating-linear-gradient(
+        180deg,
+        rgb(255 255 255 / 0.02) 0 1px,
+        transparent 1px 3px
+      );
+      color: var(--bone);
+      font-family: var(--font-grotesk);
+      font-size: 1rem;
+      line-height: 1.4;
       -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
       overflow-x: clip;
     }
 
     .mono {
       font-family: var(--font-mono);
-      font-variant-numeric: tabular-nums;
       font-feature-settings: "tnum" 1, "zero" 1;
+      letter-spacing: -0.01em;
     }
 
-    /* 1. Fixed Top Honesty Mode Banner */
-    .mode-banner {
+    .hidden {
+      display: none !important;
+    }
+
+    /* 1. Fixed Chrome: Mode Banner + Framed Navigation Bar */
+    .app-header-fixed {
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 60;
-      height: var(--banner-h);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 24px;
-      background: rgba(15, 14, 13, 0.96);
-      border-bottom: 1px solid var(--kiln-slate);
-      font-family: var(--font-mono);
-      font-size: 11px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--kiln-bone);
+      inset: 0 0 auto;
+      z-index: 90;
+      background: var(--night);
     }
 
-    .mode-banner-left,
-    .mode-banner-right {
+    .mode-banner {
       display: flex;
       align-items: center;
-      gap: 10px;
+      justify-content: center;
+      gap: 0.6rem;
+      min-height: 2rem;
+      padding: 0.35rem var(--gutter);
+      border-bottom: 1px solid var(--slate);
+      color: var(--bone);
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-align: center;
+      text-transform: uppercase;
     }
 
     .pill-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: var(--kiln-mint);
-      box-shadow: 0 0 0 3px rgba(31, 192, 128, 0.22);
-      flex-shrink: 0;
+      flex: none;
+      width: 0.5rem;
+      height: 0.5rem;
+      border-radius: 50%;
+      background: var(--state-ok);
+      box-shadow: 0 0 0 3px rgb(31 192 128 / 0.18);
     }
 
     .pill-dot.amber {
-      background: var(--kiln-amber);
-      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.22);
+      background: var(--state-warn);
+      box-shadow: none;
     }
 
-    /* 2. Outer Architectural Blueprint Shell */
-    .app-shell {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: calc(var(--banner-h) + 20px) 24px 36px;
+    .app-nav {
+      padding: 0.75rem var(--gutter);
+    }
+
+    .app-nav-frame {
       display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    /* Architectural Framed Header */
-    .topbar {
-      display: grid;
-      grid-template-columns: minmax(280px, 1.15fr) 1fr auto;
       align-items: stretch;
-      background: var(--kiln-chamber);
-      border: 1px solid var(--kiln-bone);
+      width: 100%;
+      max-width: 85rem;
+      min-height: 3.5rem;
+      margin-inline: auto;
+      border: 1px solid var(--bone);
+      color: var(--bone);
     }
 
-    .brand-group {
+    .app-nav-brand {
       display: flex;
       align-items: center;
-      gap: 16px;
-      padding: 16px 20px;
+      gap: 0.75rem;
+      flex: none;
+      padding: 0 1.25rem;
+      color: var(--bone);
+      font-family: var(--font-serif);
+      font-size: 1.65rem;
+      line-height: 1;
+      letter-spacing: -0.02em;
     }
 
-    .brand-mark {
-      width: 42px;
-      height: 42px;
-      background: var(--kiln-copper);
-      color: var(--kiln-obsidian);
-      border: 1px solid var(--kiln-paper);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .app-nav-mark {
+      display: inline-grid;
+      place-items: center;
+      width: 1.5rem;
+      height: 1.5rem;
+      border: 1px solid var(--bone);
       font-family: var(--font-mono);
+      font-size: 0.75rem;
       font-weight: 700;
-      font-size: 18px;
-      letter-spacing: -0.03em;
-      flex-shrink: 0;
     }
 
-    .brand-title {
-      font-family: var(--font-display);
-      font-size: clamp(28px, 2.4vw, 36px);
-      font-weight: 400;
-      line-height: 0.96;
-      letter-spacing: -0.025em;
-      margin: 0;
-      color: var(--kiln-paper);
+    .app-nav-links {
       display: flex;
-      align-items: baseline;
-      gap: 10px;
+      flex: 1;
+      justify-content: flex-end;
+      overflow-x: auto;
+      scrollbar-width: none;
     }
 
-    .brand-version {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--kiln-copper);
-      border: 1px solid var(--kiln-copper-line);
-      background: var(--kiln-copper-soft);
-      padding: 2px 6px;
+    .app-nav-links::-webkit-scrollbar {
+      display: none;
     }
 
-    .brand-sub {
-      font-size: 13px;
-      color: var(--kiln-ash);
-      margin: 4px 0 0;
-      line-height: 1.35;
-    }
-
-    .telemetry-cells {
-      display: grid;
-      grid-template-columns: 1.2fr 1fr;
-      border-left: 1px solid var(--kiln-slate);
-    }
-
-    .telemetry-cell {
-      padding: 12px 16px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 4px;
-      border-right: 1px solid var(--kiln-slate);
-    }
-
-    .cell-kicker {
-      font-family: var(--font-mono);
-      font-size: 10px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--kiln-stone);
-    }
-
-    .cell-value {
-      font-family: var(--font-mono);
-      font-size: 12px;
-      color: var(--kiln-bone);
+    .nav-cell-btn {
+      position: relative;
       display: flex;
       align-items: center;
-      gap: 8px;
+      flex: none;
+      padding: 0 1.15rem;
+      border: 0;
+      border-left: 1px solid var(--slate);
+      background: transparent;
+      color: var(--ash);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
       white-space: nowrap;
+      cursor: pointer;
+      transition: color 0.2s, background-color 0.2s;
     }
 
-    .topbar-actions {
+    .nav-cell-btn:hover {
+      color: var(--white);
+      background: var(--graphite);
+    }
+
+    .nav-cell-btn.btn-preset-active {
+      color: var(--ink);
+      background: var(--bone);
+    }
+
+    .nav-cell-btn:focus-visible {
+      outline: 2px solid var(--bone);
+      outline-offset: -2px;
+    }
+
+    /* BYOK Drawer tucked neatly under fixed header */
+    .byok-drawer {
+      max-width: 85rem;
+      margin: 0 auto 0.75rem;
+      padding: 0.75rem 1.25rem;
+      border: 1px solid var(--slate);
+      background: var(--panel);
       display: flex;
-      align-items: stretch;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
     }
 
-    .topbar-actions .btn {
-      border: none;
-      border-left: 1px solid var(--kiln-slate);
-      height: 100%;
-      padding: 0 18px;
+    .byok-drawer-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.6rem;
+      flex: 1;
+      justify-content: flex-end;
     }
 
-    /* Command & Scenario Blueprint Frame */
-    .command-bar {
-      background: var(--kiln-chamber);
-      border: 1px solid var(--kiln-slate);
+    /* 2. Main Editorial Surface */
+    .app-main {
+      padding: var(--header-h) var(--gutter) 5rem;
+    }
+
+    .wrap-l {
+      width: 100%;
+      max-width: 72.5rem;
+      margin-inline: auto;
+    }
+
+    .surface-head {
       display: flex;
       flex-direction: column;
+      gap: 1rem;
+      max-width: 50rem;
+      padding: 3.5rem 0 2.75rem;
     }
 
-    .preset-row {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: stretch;
-      justify-content: space-between;
-      border-bottom: 1px solid var(--kiln-slate);
-      background: var(--kiln-panel);
-    }
-
-    .preset-buttons {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: stretch;
-    }
-
-    .preset-buttons .btn {
-      border: none;
-      border-right: 1px solid var(--kiln-slate);
-      padding: 12px 18px;
-    }
-
-    .hook-readout {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 18px;
-      font-size: 11px;
+    .surface-kicker {
+      color: var(--ash);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: var(--kiln-ash);
-      border-left: 1px solid var(--kiln-slate);
+    }
+
+    .surface-title {
+      margin: 0;
+      color: var(--bone);
+      font-family: var(--font-serif);
+      font-size: clamp(2.75rem, 5.6vw, 4.75rem);
+      font-weight: 400;
+      line-height: 0.95;
+      letter-spacing: -0.02em;
+    }
+
+    .surface-sub {
+      margin: 0;
+      max-width: 41rem;
+      color: var(--ash);
+      font-size: 1.125rem;
+      line-height: 1.45;
     }
 
     .prompt-form {
       display: grid;
-      grid-template-columns: auto 1fr auto;
-      align-items: stretch;
-    }
-
-    .prompt-prefix {
-      display: flex;
-      align-items: center;
-      padding: 0 16px;
-      background: var(--kiln-obsidian);
-      border-right: 1px solid var(--kiln-slate);
-      font-family: var(--font-mono);
-      font-size: 11px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--kiln-copper);
-      user-select: none;
+      grid-template-columns: 1fr auto;
+      gap: 0.75rem;
+      max-width: 44rem;
+      margin-top: 0.5rem;
     }
 
     .prompt-input {
       width: 100%;
-      background: var(--kiln-obsidian);
-      border: none;
-      padding: 14px 16px;
-      color: var(--kiln-paper);
-      font-family: var(--font-sans);
-      font-size: 14px;
+      min-height: 3rem;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--slate);
+      background: var(--night);
+      color: var(--bone);
+      font-family: var(--font-grotesk);
+      font-size: 0.9375rem;
       outline: none;
+      transition: border-color 0.2s;
     }
 
     .prompt-input:focus-visible {
-      background: #141311;
-      box-shadow: inset 0 0 0 1px var(--kiln-copper);
+      border-color: var(--bone);
     }
 
-    /* Mechanical Buttons (0px radius, cubic-bezier tactile press) */
-    .btn {
+    /* 3. Strict 2-Card Architecture Grid */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    .stack-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      min-width: 0;
+    }
+
+    .card {
+      min-width: 0;
+      border: 1px solid var(--slate);
+      background: var(--panel);
+    }
+
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      min-height: 3.5rem;
+      padding: 0.75rem 1.25rem;
+      border-bottom: 1px solid var(--slate);
+    }
+
+    .card-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--bone);
+      font-family: var(--font-grotesk);
+      font-size: 0.9375rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      text-transform: uppercase;
+    }
+
+    .card-pad {
+      padding: 1.25rem;
+    }
+
+    /* 4. Status Tags (The Only Color Accents) */
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      flex: none;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      color: var(--black);
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 700;
+      line-height: 1.2;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .tag-ok {
+      background: var(--state-ok);
+    }
+
+    .tag-warn {
+      background: var(--state-warn);
+    }
+
+    .tag-bad {
+      background: var(--state-bad);
+    }
+
+    .tag-muted {
+      border: 1px solid var(--slate);
+      background: transparent;
+      color: var(--ash);
+    }
+
+    /* 5. Mechanical 3D Flip Buttons (Bone / Ghost / Danger) */
+    .ui-btn {
+      position: relative;
+      isolation: isolate;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      padding: 11px 16px;
-      border-radius: 0;
-      border: 1px solid var(--kiln-slate);
-      background: var(--kiln-panel);
-      color: var(--kiln-bone);
+      gap: 0.5rem;
+      min-height: 3rem;
+      padding: 0.85rem 1.25rem;
+      overflow: hidden;
+      border: 1px solid transparent;
       font-family: var(--font-mono);
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: 0.02em;
+      text-align: center;
+      text-decoration: none;
       text-transform: uppercase;
       cursor: pointer;
-      transition:
-        background-color 140ms var(--ease-out-cubic),
-        color 140ms var(--ease-out-cubic),
-        border-color 140ms var(--ease-out-cubic),
-        transform 120ms var(--ease-out-cubic);
+      transition: color 0.28s;
     }
 
-    .btn:active:not(:disabled) {
-      transform: translateY(1px);
+    .ui-btn::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: var(--ui-btn-flip, var(--white));
+      transform-origin: 50% 100%;
+      transform: perspective(150px) rotateX(90deg) scale(1.02);
+      transition: transform 0.38s var(--ease-flip);
     }
 
-    .btn:focus-visible {
-      outline: 2px solid var(--kiln-copper);
-      outline-offset: -2px;
+    .ui-btn:not(:disabled):hover::before,
+    .ui-btn:not(:disabled):focus-visible::before {
+      transform: perspective(1000px) rotateX(0deg) scale(1);
     }
 
-    .btn:disabled {
-      opacity: 0.42;
+    .ui-btn:focus-visible {
+      outline: 2px solid var(--bone);
+      outline-offset: 2px;
+    }
+
+    .ui-btn:disabled {
+      opacity: 0.4;
       cursor: not-allowed;
     }
 
-    .btn-preset-active {
-      background: var(--kiln-copper-soft);
-      color: var(--kiln-paper);
-      box-shadow: inset 0 -2px 0 var(--kiln-copper);
+    .ui-btn-primary {
+      background: var(--bone);
+      color: var(--ink);
+      --ui-btn-flip: var(--white);
     }
 
-    .btn-primary {
-      background: var(--kiln-copper);
-      border-color: var(--kiln-copper);
-      color: var(--kiln-obsidian);
-      font-weight: 700;
-      padding: 12px 22px;
+    .ui-btn-ghost {
+      border-color: var(--bone);
+      background: transparent;
+      color: var(--bone);
+      --ui-btn-flip: var(--bone);
     }
 
-    .btn-emerald {
-      background: var(--kiln-mint-soft);
-      border-color: var(--kiln-mint-line);
-      color: var(--kiln-mint);
+    .ui-btn-ghost:not(:disabled):hover,
+    .ui-btn-ghost:not(:disabled):focus-visible {
+      color: var(--ink);
     }
 
-    .btn-danger {
-      background: var(--kiln-vermilion-soft);
-      border-color: var(--kiln-vermilion-line);
-      color: #ff6e5c;
+    .ui-btn-danger {
+      border-color: var(--state-bad);
+      background: transparent;
+      color: var(--state-bad);
+      --ui-btn-flip: var(--state-bad);
     }
 
-    @media (hover: hover) and (pointer: fine) {
-      .btn:hover:not(:disabled) {
-        background: var(--kiln-hover);
-        color: var(--kiln-paper);
-        border-color: var(--kiln-bone);
-      }
-      .btn-preset-active:hover:not(:disabled) {
-        background: rgba(255, 85, 0, 0.22);
-        color: var(--kiln-paper);
-      }
-      .btn-primary:hover:not(:disabled) {
-        background: #ff6d24;
-        border-color: var(--kiln-paper);
-        color: var(--kiln-obsidian);
-      }
-      .btn-emerald:hover:not(:disabled) {
-        background: rgba(31, 192, 128, 0.24);
-        border-color: var(--kiln-mint);
-        color: #57e9af;
-      }
-      .btn-danger:hover:not(:disabled) {
-        background: rgba(255, 59, 36, 0.24);
-        border-color: var(--kiln-vermilion);
-        color: #ff9487;
-      }
+    .ui-btn-danger:not(:disabled):hover,
+    .ui-btn-danger:not(:disabled):focus-visible {
+      color: var(--black);
     }
 
-    .btn-sm {
-      padding: 8px 12px;
-      font-size: 11px;
+    .ui-btn-sm {
+      min-height: 2.35rem;
+      padding: 0.5rem 0.9rem;
+      font-size: 0.75rem;
     }
 
-    /* 3. 15-Second Split-Screen Blueprint Arena */
-    .arena-grid {
+    .ui-btn-block {
+      width: 100%;
+    }
+
+    /* 6. Clean Key-Value & Action Rows */
+    .kv-list {
       display: grid;
-      grid-template-columns: 0.92fr 1.28fr;
-      border: 1px solid var(--kiln-bone);
-      background: var(--kiln-chamber);
+      margin: 0;
     }
 
-    .pane {
-      display: flex;
-      flex-direction: column;
-      min-height: 470px;
-      overflow: hidden;
-    }
-
-    .pane-left {
-      border-right: 1px solid var(--kiln-bone);
-      background: var(--kiln-obsidian);
-    }
-
-    .pane-right {
-      background: var(--kiln-chamber);
-    }
-
-    .pane-header {
-      padding: 12px 18px;
-      border-bottom: 1px solid var(--kiln-slate);
-      background: var(--kiln-panel);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-
-    .pane-label {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.13em;
-      text-transform: uppercase;
-      color: var(--kiln-ash);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .pane-index {
-      display: inline-block;
-      padding: 2px 6px;
-      border: 1px solid var(--kiln-slate);
-      background: var(--kiln-obsidian);
-      color: var(--kiln-bone);
-      font-size: 10px;
-    }
-
-    .pane-label.wafer {
-      color: var(--kiln-copper);
-    }
-
-    .pane-label.wafer .pane-index {
-      border-color: var(--kiln-copper-line);
-      color: var(--kiln-copper);
-    }
-
-    .status-badge {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      padding: 4px 9px;
-      border: 1px solid var(--kiln-slate);
-      background: var(--kiln-obsidian);
-      color: var(--kiln-bone);
-    }
-
-    .pane-body {
-      padding: 18px;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
-    /* Left Chamber: GPU Crawl Telemetry */
-    .gpu-clock-row {
+    .kv {
       display: flex;
       align-items: baseline;
       justify-content: space-between;
-      gap: 12px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--kiln-slate);
+      gap: 1rem;
+      padding: 0.7rem 0;
+      border-bottom: 1px solid var(--slate);
     }
 
-    .gpu-timer {
-      font-size: 30px;
+    .kv dt {
+      color: var(--ash);
+      font-size: 0.9375rem;
+    }
+
+    .kv dd {
+      margin: 0;
+      color: var(--bone);
+      font-family: var(--font-mono);
+      font-size: 0.875rem;
       font-weight: 700;
-      letter-spacing: -0.03em;
-      color: var(--kiln-amber);
+      text-align: right;
     }
 
-    .progress-track {
-      width: 100%;
-      height: 10px;
-      background: var(--kiln-chamber);
-      border: 1px solid var(--kiln-slate);
+    .section-divider {
+      margin: 1.25rem 0 0.35rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--slate);
+      color: var(--ash);
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .action-list {
+      display: grid;
+    }
+
+    .action-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 1rem;
+      align-items: center;
+      padding: 0.9rem 0;
+      border-bottom: 1px solid var(--slate);
+    }
+
+    .action-row:last-child {
+      border-bottom: 0;
+    }
+
+    .action-title {
+      margin: 0;
+      color: var(--bone);
+      font-weight: 600;
+      font-size: 0.9375rem;
+    }
+
+    .action-desc {
+      margin: 0.2rem 0 0;
+      color: var(--ash);
+      font-size: 0.84375rem;
+      line-height: 1.45;
+    }
+
+    /* 7. Meter & GPU Contrast */
+    .meter {
+      height: 0.5rem;
+      border: 1px solid var(--slate);
+      background: var(--night);
       overflow: hidden;
     }
 
-    .progress-fill {
+    .meter-fill {
       height: 100%;
       width: 0%;
-      background: repeating-linear-gradient(
-        -45deg,
-        var(--kiln-amber),
-        var(--kiln-amber) 6px,
-        #d97706 6px,
-        #d97706 12px
-      );
-      transition: width 110ms linear;
+      background: var(--state-warn);
+      transition: width 0.14s linear;
     }
 
-    .progress-fill.done {
-      background: var(--kiln-mint);
+    .meter-fill.done {
+      background: var(--state-ok);
     }
 
-    .code-stream {
-      flex: 1;
-      margin: 0;
-      padding: 14px;
-      background: #0a0908;
-      border: 1px solid var(--kiln-slate);
+    .spend-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+      color: var(--ash);
+      font-size: 0.875rem;
+    }
+
+    .codeblock {
+      max-height: 18rem;
+      margin: 0.85rem 0 0;
+      padding: 1rem 1.1rem;
+      overflow: auto;
+      border: 1px solid var(--slate);
+      background: var(--night);
+      color: var(--bone);
       font-family: var(--font-mono);
-      font-size: 12px;
-      line-height: 1.6;
-      color: var(--kiln-ash);
+      font-size: 0.78125rem;
+      line-height: 1.55;
       white-space: pre-wrap;
       word-break: break-word;
-      min-height: 260px;
-      max-height: 350px;
-      overflow-y: auto;
     }
 
-    /* Right Chamber: BurnerApp Canvas */
+    .outcome-box {
+      margin-top: 1rem;
+      padding: 1rem 1.1rem;
+      border: 1px solid var(--slate);
+      background: var(--night);
+    }
+
+    .outcome-box.allowed {
+      border-color: var(--state-ok);
+    }
+
+    .outcome-box.blocked {
+      border-color: var(--state-bad);
+    }
+
+    .outcome-head {
+      margin: 0 0 0.45rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .outcome-head.allowed {
+      color: var(--state-ok);
+    }
+
+    .outcome-head.blocked {
+      color: var(--state-bad);
+    }
+
+    /* 8. Event Timeline (Replaces 6-Column Spreadsheet) */
+    .timeline {
+      display: grid;
+    }
+
+    .tl-row {
+      display: grid;
+      grid-template-columns: 4.5rem 1.6rem 1fr;
+      gap: 0.75rem;
+      align-items: start;
+      padding: 0.8rem 0;
+      border-bottom: 1px solid var(--slate);
+    }
+
+    .tl-row:last-child {
+      border-bottom: 0;
+    }
+
+    .tl-time {
+      padding-top: 0.15rem;
+      color: var(--ash);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+    }
+
+    .ev-dot {
+      display: grid;
+      place-items: center;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      color: var(--black);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .ev-ok {
+      background: var(--state-ok);
+    }
+
+    .ev-bad {
+      background: var(--state-bad);
+    }
+
+    .tl-label {
+      color: var(--bone);
+      font-weight: 600;
+      font-size: 0.9375rem;
+    }
+
+    .tl-code {
+      font-family: var(--font-mono);
+      font-size: 0.78125rem;
+    }
+
+    .ev-code-ok {
+      color: var(--state-ok);
+    }
+
+    .ev-code-bad {
+      color: var(--state-bad);
+    }
+
+    .tl-detail {
+      margin-top: 0.25rem;
+      color: var(--ash);
+      font-size: 0.78125rem;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    /* 9. Empty & Loading States */
     .empty-state {
-      flex: 1;
       display: flex;
       flex-direction: column;
       align-items: flex-start;
-      justify-content: space-between;
-      padding: 28px;
-      gap: 20px;
-      border: 1px solid var(--kiln-slate);
-      background:
-        linear-gradient(135deg, rgba(255, 85, 0, 0.07) 0%, transparent 55%),
-        var(--kiln-obsidian);
+      gap: 1.5rem;
+      padding: 1.25rem 0.25rem;
     }
 
-    .empty-display {
-      font-family: var(--font-display);
-      font-size: clamp(32px, 3vw, 44px);
-      font-weight: 400;
-      line-height: 0.98;
-      letter-spacing: -0.025em;
-      margin: 6px 0 10px;
-      color: var(--kiln-paper);
+    .empty-state p {
+      margin: 0;
+      color: var(--bone);
+      font-family: var(--font-serif);
+      font-size: 2.25rem;
+      line-height: 1;
+    }
+
+    .empty-line {
+      margin: 0;
+      color: var(--ash);
+      font-size: 0.9375rem;
     }
 
     .skeleton-box {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      padding: 20px;
-      background: var(--kiln-obsidian);
-      border: 1px solid var(--kiln-slate);
+      display: grid;
+      gap: 0.85rem;
+      padding: 0.5rem 0;
     }
 
     .skeleton-line {
-      height: 14px;
-      background: linear-gradient(90deg, #171614 25%, #2b2925 50%, #171614 75%);
+      height: 0.9rem;
+      background: linear-gradient(90deg, var(--night) 25%, var(--graphite) 50%, var(--night) 75%);
       background-size: 200% 100%;
       animation: shimmer 1.1s infinite linear;
     }
@@ -593,441 +722,204 @@
       to { background-position: -200% 0; }
     }
 
-    /* Spawned BurnerApp Blueprint Card */
-    .manifest-bar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 10px 14px;
-      background: var(--kiln-obsidian);
-      border: 1px solid var(--kiln-slate);
-      font-size: 11px;
-      color: var(--kiln-ash);
-    }
-
-    .status-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 3px 8px;
-      font-family: var(--font-mono);
-      font-weight: 700;
-      font-size: 10px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-    }
-
-    .status-tag.active {
-      background: var(--kiln-mint-soft);
-      color: var(--kiln-mint);
-      border: 1px solid var(--kiln-mint-line);
-    }
-
-    .status-tag.burned {
-      background: var(--kiln-vermilion-soft);
-      color: #ff6e5c;
-      border: 1px solid var(--kiln-vermilion-line);
-    }
-
-    .burner-app-card {
-      padding: 18px;
-      border: 1px solid var(--kiln-bone);
-      background: var(--kiln-obsidian);
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .burner-app-card.burned {
-      border-color: var(--kiln-vermilion-line);
-      background:
-        linear-gradient(180deg, rgba(255, 59, 36, 0.07), var(--kiln-obsidian));
-    }
-
-    .burner-card-title {
-      font-family: var(--font-display);
-      font-size: clamp(26px, 2.3vw, 34px);
-      font-weight: 400;
-      line-height: 1;
-      letter-spacing: -0.02em;
-      margin: 4px 0 6px;
-      color: var(--kiln-paper);
-    }
-
-    .action-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .redteam-strip {
-      padding: 12px 14px;
-      border: 1px solid var(--kiln-vermilion-line);
-      background: rgba(255, 59, 36, 0.05);
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-
-    .tool-output {
-      padding: 14px;
-      border: 1px solid var(--kiln-slate);
-      background: #0a0908;
-      font-size: 12px;
-      line-height: 1.55;
-      max-height: 220px;
-      overflow-y: auto;
-    }
-
-    .tool-output.blocked {
-      border-color: var(--kiln-vermilion);
-      background: rgba(255, 59, 36, 0.08);
-    }
-
-    .tool-output.allowed {
-      border-color: var(--kiln-mint);
-      background: rgba(31, 192, 128, 0.05);
-    }
-
     .error-banner {
-      padding: 12px 16px;
-      border: 1px solid var(--kiln-vermilion);
-      background: var(--kiln-vermilion-soft);
-      color: #ffd6d1;
+      margin-bottom: 1.5rem;
+      padding: 0.85rem 1.1rem;
+      border: 1px solid var(--state-bad);
+      color: var(--state-bad);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
-      font-size: 13px;
+      gap: 1rem;
+      font-size: 0.875rem;
     }
 
-    /* 4. Audit Receipt Ledger */
-    .ledger-panel {
-      background: var(--kiln-chamber);
-      border: 1px solid var(--kiln-slate);
-      overflow: hidden;
+    .sess-origin {
+      margin: 0 0 0.75rem;
+      color: var(--ash);
+      font-size: 0.8125rem;
+      overflow-wrap: anywhere;
     }
 
-    .ledger-table-wrap {
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12px;
-      text-align: left;
-    }
-
-    th {
-      padding: 11px 16px;
-      font-family: var(--font-mono);
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      color: var(--kiln-stone);
-      border-bottom: 1px solid var(--kiln-slate);
-      background: var(--kiln-obsidian);
-    }
-
-    td {
-      padding: 10px 16px;
-      border-bottom: 1px solid var(--kiln-slate);
-      color: var(--kiln-bone);
-      vertical-align: top;
-    }
-
-    tr:last-child td {
-      border-bottom: none;
-    }
-
-    .decision-allowed {
-      color: var(--kiln-mint);
-      font-weight: 700;
-    }
-
-    .decision-blocked {
-      color: #ff5e49;
-      font-weight: 700;
-    }
-
-    .byok-drawer {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 10px;
-      padding: 12px 16px;
-      border-top: 1px solid var(--kiln-slate);
-      background: var(--kiln-panel);
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    @media (max-width: 1040px) {
-      .topbar {
-        grid-template-columns: 1fr;
-      }
-      .telemetry-cells {
-        border-left: none;
-        border-top: 1px solid var(--kiln-slate);
-      }
-      .topbar-actions {
-        border-top: 1px solid var(--kiln-slate);
-      }
-      .topbar-actions .btn {
-        flex: 1;
-        padding: 12px;
-      }
-      .arena-grid {
-        grid-template-columns: 1fr;
-      }
-      .pane-left {
-        border-right: none;
-        border-bottom: 1px solid var(--kiln-bone);
-      }
-      .hook-readout {
-        border-left: none;
-        border-top: 1px solid var(--kiln-slate);
-        width: 100%;
+    @media (max-width: 900px) {
+      .grid-2 {
+        grid-template-columns: minmax(0, 1fr);
       }
     }
 
-    @media (max-width: 640px) {
-      .mode-banner {
-        padding: 0 12px;
-        font-size: 10px;
+    @media (max-width: 767px) {
+      :root {
+        --gutter: 1.25rem;
+        --header-h: 6.75rem;
       }
-      .mode-banner-right {
-        display: none;
-      }
-      .app-shell {
-        padding: calc(var(--banner-h) + 12px) 12px 24px;
+      .surface-head {
+        padding: 2.25rem 0 1.75rem;
       }
       .prompt-form {
         grid-template-columns: 1fr;
       }
-      .prompt-prefix {
-        padding: 8px 12px;
-        border-right: none;
-        border-bottom: 1px solid var(--kiln-slate);
-      }
-      .preset-buttons .btn {
-        flex: 1 1 100%;
-        border-right: none;
-        border-bottom: 1px solid var(--kiln-slate);
+      .action-row {
+        grid-template-columns: 1fr;
       }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .skeleton-line {
-        animation: none;
-      }
-      .btn {
+      .ui-btn::before,
+      .meter-fill {
         transition: none;
       }
-      .btn:active:not(:disabled) {
-        transform: none;
+      .skeleton-line {
+        animation: none;
       }
     }
   </style>
 </head>
 <body>
-  <!-- Fixed Top Honesty Mode Banner -->
-  <div class="mode-banner" role="status" aria-live="polite">
-    <div class="mode-banner-left">
-      <span id="api-dot" class="pill-dot amber"></span>
-      <span id="mode-banner-text">OFFLINE SANDBOX REPLAY · DETERMINISTIC FIXTURES (ADD CEREBRAS KEY FOR LIVE WSE-3)</span>
-    </div>
-    <div class="mode-banner-right">
-      <span>HARNESS: OPENCLAW 2026.11.6</span>
-      <span>·</span>
-      <span>GOVERNOR: BEFORE_TOOL_CALL</span>
-    </div>
-  </div>
-
-  <div class="app-shell">
-    <!-- Architectural Blueprint Header -->
-    <header class="topbar">
-      <div class="brand-group">
-        <div class="brand-mark" aria-hidden="true">B//01</div>
-        <div>
-          <h1 class="brand-title">
-            BurnerApp
-            <span class="brand-version">WSE-3 KILN</span>
-          </h1>
-          <p class="brand-sub">Burner phones, for software — 1s disposable local micro-apps inside OpenClaw Canvas</p>
-        </div>
-      </div>
-
-      <div class="telemetry-cells">
-        <div class="telemetry-cell">
-          <span class="cell-kicker">Inference Target</span>
-          <span class="cell-value">
-            <strong id="model-badge" style="color:var(--kiln-paper)">moonshotai-kimi-k3.1-pro-trial</strong>
-          </span>
-        </div>
-        <div class="telemetry-cell">
-          <span class="cell-kicker">Participant TPM Budget</span>
-          <span class="cell-value">
-            <strong id="tpm-used" style="color:var(--kiln-copper)">0</strong>
-            <span>/ 100,000 TOK</span>
-          </span>
-        </div>
-      </div>
-
-      <div class="topbar-actions">
-        <button id="toggle-byok-btn" class="btn" type="button">BYOK Key</button>
-        <button id="reset-sandbox-btn" class="btn" type="button">Reset Sandbox</button>
-      </div>
-    </header>
-
-    <!-- Error Banner -->
-    <div id="error-banner" class="error-banner hidden" role="alert">
-      <span id="error-text"></span>
-      <button id="error-retry-btn" class="btn btn-sm" type="button">Dismiss</button>
+  <!-- Fixed Header: Honesty Mode Banner + Framed Navigation -->
+  <header class="app-header-fixed">
+    <div class="mode-banner" role="status" aria-live="polite">
+      <span id="api-dot" class="pill-dot amber" aria-hidden="true"></span>
+      <span id="mode-banner-text">Sandbox replay mode, no network call</span>
     </div>
 
-    <!-- Command & Scenario Blueprint Frame -->
-    <section class="command-bar" aria-label="Task launcher">
-      <div class="preset-row">
-        <div class="preset-buttons">
-          <button class="btn" type="button" data-scenario="repo-triage">
-            01 // Repo Bug &amp; Test Fixer
-          </button>
-          <button class="btn" type="button" data-scenario="bill-splitter">
-            02 // 6-Receipt Bill Splitter
-          </button>
-          <button class="btn" type="button" data-scenario="security-audit">
-            03 // Capability Boundary Lab
-          </button>
+    <nav class="app-nav" aria-label="BurnerApp">
+      <div class="app-nav-frame">
+        <div class="app-nav-brand">
+          <span class="app-nav-mark" aria-hidden="true">B</span>
+          <span>BurnerApp</span>
         </div>
-        <div class="hook-readout mono">
-          <span>Hook Gate:</span>
-          <strong style="color:var(--kiln-mint)">before_tool_call (priority 100)</strong>
+        <div class="app-nav-links">
+          <button class="nav-cell-btn" type="button" data-scenario="repo-triage">
+            Repo Fixer
+          </button>
+          <button class="nav-cell-btn" type="button" data-scenario="bill-splitter">
+            Bill Splitter
+          </button>
+          <button class="nav-cell-btn" type="button" data-scenario="security-audit">
+            Security Lab
+          </button>
+          <button id="toggle-byok-btn" class="nav-cell-btn" type="button">
+            API Key
+          </button>
+          <button id="reset-sandbox-btn" class="nav-cell-btn" type="button">
+            Reset
+          </button>
         </div>
       </div>
-
-      <form id="spawn-form" class="prompt-form">
-        <span class="prompt-prefix">TASK SPEC &gt;</span>
-        <input
-          id="prompt-input"
-          class="prompt-input"
-          type="text"
-          aria-label="Task prompt for spawning a BurnerApp"
-          placeholder="Describe a local task to compile a scoped 1-second micro-app..."
-          value="Inspect my local auth repo for failing tests and unused packages, and give me switches to patch and re-verify it."
-        />
-        <button id="spawn-btn" class="btn btn-primary" type="submit">Spawn BurnerApp</button>
-      </form>
 
       <div id="byok-drawer" class="byok-drawer hidden">
-        <label for="byok-input" class="mono" style="font-size:11px;color:var(--kiln-bone);">
-          OPTIONAL CEREBRAS API KEY (IN-MEMORY ONLY):
+        <label for="byok-input" class="mono" style="font-size:0.75rem;color:var(--ash);">
+          Optional Cerebras API key (in-memory only, never saved)
         </label>
-        <input
-          id="byok-input"
-          class="prompt-input mono"
-          style="max-width:340px;padding:8px 12px;font-size:12px;border:1px solid var(--kiln-slate);"
-          type="password"
-          aria-label="Optional Cerebras API Key"
-          placeholder="csk-..."
-        />
-        <button id="byok-save-btn" class="btn btn-sm btn-emerald" type="button">Use Live Key</button>
-      </div>
-    </section>
-
-    <!-- 15-Second Split-Screen Arena -->
-    <main class="arena-grid">
-      <!-- Left Chamber: Naive GPU Baseline -->
-      <section class="pane pane-left" aria-label="Naive GPU Baseline">
-        <div class="pane-header">
-          <span class="pane-label">
-            <span class="pane-index">CH-A</span>
-            Naive GPU Baseline (~45 tok/s)
-          </span>
-          <span id="gpu-status-pill" class="status-badge">IDLE</span>
+        <div class="byok-drawer-controls">
+          <input
+            id="byok-input"
+            class="prompt-input mono"
+            style="max-width:20rem;min-height:2.35rem;padding:0.4rem 0.75rem;font-size:0.8125rem;"
+            type="password"
+            aria-label="Optional Cerebras API Key"
+            placeholder="csk-..."
+          />
+          <button id="byok-save-btn" class="ui-btn ui-btn-primary ui-btn-sm" type="button">
+            Use live key
+          </button>
         </div>
-        <div class="pane-body">
-          <div class="gpu-clock-row">
-            <div>
-              <div class="cell-kicker">Sequential UI Generation Wait</div>
-              <div style="font-size:13px;color:var(--kiln-ash);margin-top:2px;">
-                User waits for 1,620 tokens before clicking anything
+      </div>
+    </nav>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="app-main">
+    <div class="wrap-l">
+      <!-- Editorial Surface Head -->
+      <div class="surface-head">
+        <span class="surface-kicker">
+          OpenClaw Canvas · <span id="model-badge" class="mono">moonshotai-kimi-k3.1-pro-trial</span> · <span id="tpm-used" class="mono">0</span> / 100k TPM
+        </span>
+        <h1 class="surface-title">Burner phones, for software.</h1>
+        <p class="surface-sub">
+          Spawn a single-purpose local micro-app in one second, scoped by an OpenClaw <code class="mono">before_tool_call</code> capability manifest, then burn it when the job is done.
+        </p>
+
+        <form id="spawn-form" class="prompt-form">
+          <input
+            id="prompt-input"
+            class="prompt-input"
+            type="text"
+            aria-label="Task prompt for spawning a BurnerApp"
+            placeholder="Describe a local task to spawn a scoped 1-second micro-app..."
+            value="Inspect my local auth repo for failing tests and unused packages, and give me switches to patch and re-verify it."
+          />
+          <button id="spawn-btn" class="ui-btn ui-btn-primary" type="submit">
+            Spawn BurnerApp
+          </button>
+        </form>
+      </div>
+
+      <!-- Error Banner -->
+      <div id="error-banner" class="error-banner hidden" role="alert">
+        <span id="error-text" class="mono"></span>
+        <button id="error-retry-btn" class="ui-btn ui-btn-ghost ui-btn-sm" type="button">
+          Dismiss
+        </button>
+      </div>
+
+      <!-- 2-Column Editorial Grid -->
+      <div class="grid-2">
+        <!-- Left Column: Active Micro-App Session Card -->
+        <div class="stack-cards">
+          <section class="card" aria-label="BurnerApp on Cerebras">
+            <header class="card-head">
+              <span class="card-title">Active micro-app</span>
+              <span id="cerebras-speed-pill" class="tag tag-muted">Idle</span>
+            </header>
+            <div id="right-pane-body" class="card-pad">
+              <div class="empty-state">
+                <p>Spawn a session first — then test its limits.</p>
+                <button id="empty-quick-btn" class="ui-btn ui-btn-primary" type="button">
+                  Open Repo Fixer
+                </button>
               </div>
             </div>
-            <span id="gpu-timer" class="gpu-timer mono">00.0s</span>
-          </div>
-          <div class="progress-track">
-            <div id="gpu-progress" class="progress-fill"></div>
-          </div>
-          <pre id="gpu-stream" class="code-stream">Waiting for task launch...
-
-On standard ~45 tok/s GPU inference, generating a 1,620-token wired UI takes ~36 seconds before the user can click a single button.</pre>
+          </section>
         </div>
-      </section>
 
-      <!-- Right Chamber: BurnerApp on Cerebras + OpenClaw Canvas -->
-      <section class="pane pane-right" aria-label="BurnerApp on Cerebras">
-        <div class="pane-header">
-          <span class="pane-label wafer">
-            <span class="pane-index">CH-B</span>
-            BurnerApp Kiln (Cerebras + OpenClaw Canvas)
-          </span>
-          <span id="cerebras-speed-pill" class="status-badge" style="color:var(--kiln-copper);border-color:var(--kiln-copper-line);">READY</span>
-        </div>
-        <div id="right-pane-body" class="pane-body">
-          <div class="empty-state">
-            <div>
-              <span class="cell-kicker" style="color:var(--kiln-copper);">EPHEMERAL SOFTWARE CHAMBER · ZERO STANDING PERMISSIONS</span>
-              <h2 class="empty-display">Compile the exact tool you need for the next 20 seconds.</h2>
-              <p style="margin:0;font-size:14px;color:var(--kiln-ash);max-width:520px;line-height:1.5;">
-                Select <strong style="color:var(--kiln-paper)">01 // Repo Bug &amp; Test Fixer</strong> or <strong style="color:var(--kiln-paper)">02 // 6-Receipt Bill Splitter</strong> above to compile a disposable micro-app, run real local actions, and test OpenClaw <code class="mono">before_tool_call</code> interception live.
-              </p>
+        <!-- Right Column: Speed Contrast Card + Governor Timeline Card -->
+        <div class="stack-cards">
+          <section class="card" aria-label="Naive GPU Baseline">
+            <header class="card-head">
+              <span class="card-title">Naive GPU baseline (~45 tok/s)</span>
+              <span id="gpu-status-pill" class="tag tag-muted">Idle</span>
+            </header>
+            <div class="card-pad">
+              <div class="spend-head">
+                <span>Sequential UI stream wait</span>
+                <span id="gpu-timer" class="mono" style="color:var(--bone);font-weight:700;">00.0s</span>
+              </div>
+              <div class="meter">
+                <div id="gpu-progress" class="meter-fill"></div>
+              </div>
+              <pre id="gpu-stream" class="codeblock">Waiting for task launch...
+
+At ~45 tok/s, generating a 1,620-token wired UI takes ~36 seconds before a single button works.</pre>
             </div>
-            <button id="empty-quick-btn" class="btn btn-primary" type="button">Launch Scenario 01 Now</button>
-          </div>
-        </div>
-      </section>
-    </main>
+          </section>
 
-    <!-- Bottom Audit Receipt Ledger -->
-    <section class="ledger-panel" aria-label="OpenClaw before_tool_call Audit Ledger">
-      <div class="pane-header">
-        <span class="pane-label">
-          <span class="pane-index">LOG</span>
-          OpenClaw before_tool_call Audit Ledger (50/50 Accelerator &amp; Governor Receipts)
-        </span>
-        <span id="ledger-count" class="mono" style="font-size:11px;color:var(--kiln-ash)">0 receipts</span>
+          <section class="card" aria-label="OpenClaw before_tool_call Audit Ledger">
+            <header class="card-head">
+              <span class="card-title">Governor activity</span>
+              <span id="ledger-count" class="tag tag-muted">0 receipts</span>
+            </header>
+            <div class="card-pad">
+              <div id="ledger-body" class="timeline">
+                <p class="empty-line">No tool calls evaluated yet. Spawn a micro-app and run an action on the left.</p>
+              </div>
+            </div>
+          </section>
+        </div>
       </div>
-      <div class="ledger-table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Decision</th>
-              <th>Rule</th>
-              <th>Tool</th>
-              <th>Eval Time</th>
-              <th>Receipt SHA-256</th>
-              <th>Reason</th>
-            </tr>
-          </thead>
-          <tbody id="ledger-body">
-            <tr>
-              <td colspan="6" style="text-align:center;color:var(--kiln-stone);padding:20px;">
-                No tool calls evaluated yet. Spawn a BurnerApp and trigger a scoped action or /rob probe.
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-  </div>
+    </div>
+  </main>
 
   <script>
     const state = {
@@ -1064,11 +956,9 @@ On standard ~45 tok/s GPU inference, generating a 1,620-token wired UI takes ~36
       $("api-dot").classList.toggle("amber", !hasLive);
       const bannerText = $("mode-banner-text");
       if (!bannerText) return;
-      if (hasLive) {
-        bannerText.textContent = "LIVE CEREBRAS WSE-3 ACTIVE · MOONSHOTAI-KIMI-K3.1-PRO-TRIAL";
-      } else {
-        bannerText.textContent = "OFFLINE SANDBOX REPLAY · DETERMINISTIC FIXTURES (ADD CEREBRAS KEY FOR LIVE WSE-3)";
-      }
+      bannerText.textContent = hasLive
+        ? "Real Cerebras WSE-3 · moonshotai-kimi-k3.1-pro-trial"
+        : "Sandbox replay mode, no network call";
     }
 
     function startGpuCrawl(compiled) {
@@ -1082,8 +972,9 @@ On standard ~45 tok/s GPU inference, generating a 1,620-token wired UI takes ~36
       const fullText = lines.join("\n") + "\n<!-- Waiting for remaining tool bindings... -->";
       const startMs = performance.now();
 
-      $("gpu-status-pill").textContent = "STREAMING @ 45 tok/s";
-      $("gpu-status-pill").style.color = "var(--kiln-amber)";
+      const pill = $("gpu-status-pill");
+      pill.textContent = "Streaming · 45 tok/s";
+      pill.className = "tag tag-warn";
       $("gpu-progress").classList.remove("done");
       $("gpu-progress").style.width = "2%";
 
@@ -1099,50 +990,46 @@ On standard ~45 tok/s GPU inference, generating a 1,620-token wired UI takes ~36
         if (pct >= 100) {
           clearInterval(state.gpuTimerId);
           state.gpuTimerId = null;
-          $("gpu-status-pill").textContent = "FINISHED LATE";
-          $("gpu-status-pill").style.color = "var(--kiln-mint)";
+          pill.textContent = "Finished late";
+          pill.className = "tag tag-muted";
           $("gpu-progress").classList.add("done");
         }
       }, 90);
     }
 
     function renderLoadingRightPane() {
-      $("cerebras-speed-pill").textContent = "COMPILING...";
+      const pill = $("cerebras-speed-pill");
+      pill.textContent = "Compiling…";
+      pill.className = "tag tag-warn";
       $("right-pane-body").innerHTML = `
         <div class="skeleton-box" aria-busy="true">
           <div class="skeleton-line" style="width:55%"></div>
           <div class="skeleton-line" style="width:85%"></div>
           <div class="skeleton-line" style="width:40%"></div>
-          <div style="display:flex;gap:8px;margin-top:8px;">
-            <div class="skeleton-line" style="width:140px;height:36px;"></div>
-            <div class="skeleton-line" style="width:140px;height:36px;"></div>
-          </div>
         </div>
       `;
     }
 
     function formatToolResultHtml(outcome) {
-      if (!outcome) {
-        return `<div class="mono" style="color:var(--kiln-stone);font-size:11px;">READY FOR EXECUTION · Click any scoped action button above to run a real local tool, or trigger a /rob probe to test OpenClaw interception.</div>`;
-      }
+      if (!outcome) return "";
 
       if (outcome.blocked) {
         return `
-          <div class="mono" style="color:#ff5e49;font-weight:700;margin-bottom:6px;letter-spacing:0.06em;">
-            [BLOCKED BY OPENCLAW before_tool_call HOOK]
-          </div>
-          <div class="mono" style="color:#ffd6d1;">${escapeHtml(outcome.blockReason)}</div>
-          <div class="mono" style="margin-top:8px;font-size:11px;color:var(--kiln-ash);">
-            Receipt: ${escapeHtml(outcome.receipt?.receiptId || "")} · Eval: ${escapeHtml(outcome.receipt?.evalTimeMs || 0)}ms · SHA-256: ${escapeHtml((outcome.receipt?.sha256 || "").slice(0, 16))}...
+          <div class="outcome-box blocked">
+            <p class="outcome-head blocked">Structured rejection · Blocked</p>
+            <div class="mono" style="color:var(--bone);font-size:0.8125rem;line-height:1.5;">${escapeHtml(outcome.blockReason)}</div>
+            <div class="mono" style="margin-top:0.5rem;font-size:0.75rem;color:var(--ash);">
+              ${escapeHtml(outcome.receipt?.receiptId || "")} · ${escapeHtml(outcome.receipt?.evalTimeMs || 0)}ms · sha256:${escapeHtml((outcome.receipt?.sha256 || "").slice(0, 12))}
+            </div>
           </div>
         `;
       }
 
       return `
-        <div class="mono" style="color:var(--kiln-mint);font-weight:700;margin-bottom:6px;letter-spacing:0.06em;">
-          [EXECUTED REAL LOCAL TOOL: ${escapeHtml(outcome.toolName)} · RECEIPT ${escapeHtml(outcome.receipt?.receiptId || "")}]
+        <div class="outcome-box allowed">
+          <p class="outcome-head allowed">Verified local execution · ${escapeHtml(outcome.toolName)}</p>
+          <pre class="codeblock" style="margin-top:0.5rem;max-height:14rem;">${escapeHtml(JSON.stringify(outcome.toolResult, null, 2))}</pre>
         </div>
-        <pre class="mono" style="margin:0;white-space:pre-wrap;color:var(--kiln-paper);">${escapeHtml(JSON.stringify(outcome.toolResult, null, 2))}</pre>
       `;
     }
 
@@ -1156,22 +1043,31 @@ On standard ~45 tok/s GPU inference, generating a 1,620-token wired UI takes ~36
       const tel = compiled.telemetry || {};
       const speedBadge =
         compiled.sourceMode === "LIVE_CEREBRAS_API" && tel.tps
-          ? `${tel.tps} tok/s (${tel.totalTimeSec}s)`
-          : `REPLAY FIXTURE (${compiled.localCompileMs}ms local)`;
+          ? `${tel.tps} tok/s · ${tel.totalTimeSec}s`
+          : isBurned
+            ? "Revoked"
+            : `Active · ${compiled.localCompileMs}ms`;
 
-      $("cerebras-speed-pill").textContent = speedBadge;
+      const pill = $("cerebras-speed-pill");
+      pill.textContent = speedBadge;
+      pill.className = `tag ${isBurned ? "tag-bad" : "tag-ok"}`;
 
       const actionsHtml = (spec.actions || [])
         .map(
-          (act) => `
-          <button
-            class="btn ${act.style === "primary" ? "btn-emerald" : ""}"
-            type="button"
-            data-action-id="${escapeHtml(act.id)}"
-            title="${escapeHtml(act.description || "")}"
-          >
-            ${escapeHtml(act.label)}
-          </button>
+          (act, idx) => `
+          <div class="action-row">
+            <div>
+              <p class="action-title">${escapeHtml(act.label)}</p>
+              <p class="action-desc">${escapeHtml(act.description || `Calls ${act.toolName} within manifest scope.`)}</p>
+            </div>
+            <button
+              class="ui-btn ${idx === 0 ? "ui-btn-primary" : "ui-btn-ghost"} ui-btn-sm"
+              type="button"
+              data-action-id="${escapeHtml(act.id)}"
+            >
+              Run
+            </button>
+          </div>
         `
         )
         .join("");
@@ -1179,67 +1075,74 @@ On standard ~45 tok/s GPU inference, generating a 1,620-token wired UI takes ~36
       const redTeamHtml = (spec.adversarialActions || [])
         .map(
           (probe) => `
-          <button
-            class="btn btn-sm btn-danger"
-            type="button"
-            data-probe-id="${escapeHtml(probe.id)}"
-          >
-            ${escapeHtml(probe.label)}
-          </button>
+          <div class="action-row">
+            <div>
+              <p class="action-title">${escapeHtml(probe.label)}</p>
+              <p class="action-desc">Attempts <span class="mono">${escapeHtml(probe.toolName)}</span> outside granted manifest scope.</p>
+            </div>
+            <button
+              class="ui-btn ui-btn-danger ui-btn-sm"
+              type="button"
+              data-probe-id="${escapeHtml(probe.id)}"
+            >
+              Send
+            </button>
+          </div>
         `
         )
         .join("");
 
-      const outcomeClass = state.lastToolOutcome
-        ? state.lastToolOutcome.blocked
-          ? "blocked"
-          : "allowed"
-        : "";
-
       $("right-pane-body").innerHTML = `
-        <div class="manifest-bar mono">
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-            <span class="status-tag ${isBurned ? "burned" : "active"}">${escapeHtml(session.status)}</span>
-            <span>ID: <strong style="color:var(--kiln-paper)">${escapeHtml(session.burnerId)}</strong></span>
-            <span>SOURCE: <strong style="color:var(--kiln-copper)">${escapeHtml(compiled.sourceMode)}</strong></span>
+        <p class="sess-origin mono">
+          ${escapeHtml(session.burnerId)} · ${escapeHtml(compiled.sourceMode)}
+        </p>
+        <h2 style="margin:0 0 0.35rem;font-family:var(--font-serif);font-size:2.1rem;font-weight:400;line-height:1;color:var(--bone);">
+          ${escapeHtml(spec.title)}
+        </h2>
+        <p style="margin:0 0 1rem;color:var(--ash);font-size:0.9375rem;line-height:1.45;">
+          ${escapeHtml(spec.summary)}
+        </p>
+
+        <dl class="kv-list">
+          <div class="kv">
+            <dt>Granted tools</dt>
+            <dd>${escapeHtml(session.allowedTools.join(", "))}</dd>
           </div>
-          <span>ALLOWLIST: <strong style="color:var(--kiln-bone)">${escapeHtml(session.allowedTools.join(", "))}</strong></span>
+          <div class="kv">
+            <dt>Scoped directory</dt>
+            <dd>${escapeHtml((session.allowedPaths || []).join(", "))}</dd>
+          </div>
+          <div class="kv">
+            <dt>Session state</dt>
+            <dd>${escapeHtml(session.status)}</dd>
+          </div>
+        </dl>
+
+        <p class="section-divider">Scoped actions</p>
+        <div class="action-list">
+          ${actionsHtml}
         </div>
 
-        <div class="burner-app-card ${isBurned ? "burned" : ""}">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;border-bottom:1px solid var(--kiln-slate);padding-bottom:14px;">
+        <p class="section-divider">Security lab · Attack this manifest</p>
+        <div class="action-list">
+          ${redTeamHtml}
+          <div class="action-row">
             <div>
-              <div class="mono" style="font-size:10px;letter-spacing:0.14em;color:var(--kiln-copper);font-weight:600;text-transform:uppercase;">${escapeHtml(spec.badge || "BURNERAPP CANVAS")}</div>
-              <h2 class="burner-card-title">${escapeHtml(spec.title)}</h2>
-              <p style="margin:0;font-size:13px;color:var(--kiln-ash);line-height:1.45;">${escapeHtml(spec.summary)}</p>
+              <p class="action-title">Replay after burn</p>
+              <p class="action-desc">Revoke the session token, then attempt a previously allowed tool call.</p>
             </div>
-            <button id="burn-app-btn" class="btn btn-danger btn-sm" type="button" ${isBurned ? "disabled" : ""}>
-              ${isBurned ? "App Burned (Token Wiped)" : "Burn App (Revoke Token)"}
+            <button id="probe-after-burn-btn" class="ui-btn ui-btn-danger ui-btn-sm" type="button">
+              Send
             </button>
           </div>
+        </div>
 
-          <div>
-            <div class="cell-kicker" style="margin-bottom:8px;">50% Full-Throttle Accelerator Actions (Scoped Local Tools)</div>
-            <div class="action-grid">
-              ${actionsHtml}
-            </div>
-          </div>
+        ${formatToolResultHtml(state.lastToolOutcome)}
 
-          <div class="redteam-strip">
-            <span class="mono" style="font-size:11px;font-weight:600;color:#ff8070;letter-spacing:0.06em;">
-              50% /ROB GOVERNOR PROBES (PROVE DETERMINISTIC REFUSAL):
-            </span>
-            <div style="display:flex;flex-wrap:wrap;gap:6px;">
-              ${redTeamHtml}
-              <button id="probe-after-burn-btn" class="btn btn-sm btn-danger" type="button">
-                Try Call After Burn
-              </button>
-            </div>
-          </div>
-
-          <div class="tool-output ${outcomeClass}">
-            ${formatToolResultHtml(state.lastToolOutcome)}
-          </div>
+        <div style="margin-top:1.25rem;">
+          <button id="burn-app-btn" class="ui-btn ui-btn-danger ui-btn-block" type="button" ${isBurned ? "disabled" : ""}>
+            ${isBurned ? "Session revoked" : "Burn micro-app · Revoke token"}
+          </button>
         </div>
       `;
 
@@ -1274,28 +1177,29 @@ On standard ~45 tok/s GPU inference, generating a 1,620-token wired UI takes ~36
       $("ledger-count").textContent = `${auditLog.length} receipt${auditLog.length === 1 ? "" : "s"}`;
       if (auditLog.length === 0) {
         $("ledger-body").innerHTML = `
-          <tr>
-            <td colspan="6" style="text-align:center;color:var(--kiln-stone);padding:20px;">
-              No tool calls evaluated yet. Spawn a BurnerApp and trigger a scoped action or /rob probe.
-            </td>
-          </tr>
+          <p class="empty-line">No tool calls evaluated yet. Spawn a micro-app and run an action on the left.</p>
         `;
         return;
       }
 
       $("ledger-body").innerHTML = auditLog
-        .map(
-          (entry) => `
-          <tr>
-            <td class="mono ${entry.decision === "ALLOWED" ? "decision-allowed" : "decision-blocked"}">${escapeHtml(entry.decision)}</td>
-            <td class="mono">${escapeHtml(entry.rule)}</td>
-            <td class="mono">${escapeHtml(entry.toolName)}</td>
-            <td class="mono">${escapeHtml(entry.evalTimeMs)}ms</td>
-            <td class="mono">${escapeHtml((entry.sha256 || "").slice(0, 14))}...</td>
-            <td>${escapeHtml(entry.reason)}</td>
-          </tr>
-        `
-        )
+        .map((entry) => {
+          const ok = entry.decision === "ALLOWED";
+          const tone = ok ? "ok" : "bad";
+          const glyph = ok ? "✓" : "✕";
+          return `
+            <div class="tl-row">
+              <span class="tl-time">${escapeHtml(entry.evalTimeMs)}ms</span>
+              <span class="ev-dot ev-${tone}" aria-hidden="true">${glyph}</span>
+              <div>
+                <span class="tl-label">${escapeHtml(entry.toolName)}</span>
+                <span class="tl-code ev-code-${tone}"> ${escapeHtml(entry.rule)}</span>
+                <div class="tl-detail">${escapeHtml(entry.reason)}</div>
+                <div class="tl-detail mono">sha256:${escapeHtml((entry.sha256 || "").slice(0, 16))}</div>
+              </div>
+            </div>
+          `;
+        })
         .join("");
     }
 
@@ -1360,7 +1264,7 @@ On standard ~45 tok/s GPU inference, generating a 1,620-token wired UI takes ~36
       const prevLabel = triggerBtn ? triggerBtn.textContent : "";
       if (triggerBtn) {
         triggerBtn.disabled = true;
-        triggerBtn.textContent = "Running...";
+        triggerBtn.textContent = "…";
       }
       try {
         const res = await fetch("/api/tool-call", {
