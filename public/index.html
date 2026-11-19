@@ -6,6 +6,7 @@
   <title>BurnerApp — 1-Second Disposable Micro-Apps on Cerebras &amp; OpenClaw</title>
   <meta name="description" content="Burner phones, for software. Spawn a 1-second local micro-app inside OpenClaw Canvas on Cerebras Kimi K3.1 Pro, governed by a single-use capability manifest." />
   <meta name="theme-color" content="#101113" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231d1e21'/%3E%3Cg transform='translate(4 4)' fill='%23c4c2b8'%3E%3Crect x='2' y='3' width='12' height='3'/%3E%3Crect x='2' y='3' width='3' height='15'/%3E%3Crect x='2' y='15' width='12' height='3'/%3E%3Crect x='8' y='9' width='3' height='3'/%3E%3Crect x='16' y='6' width='6' height='3'/%3E%3Crect x='19' y='6' width='3' height='15'/%3E%3Crect x='16' y='18' width='6' height='3'/%3E%3C/g%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
@@ -127,30 +128,28 @@
     .app-nav-brand {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
       flex: none;
       padding: 0 1.25rem;
       color: var(--bone);
-      font-family: var(--font-serif);
-      font-size: 1.65rem;
-      line-height: 1;
-      letter-spacing: -0.02em;
     }
 
-    .app-nav-mark {
-      display: inline-grid;
-      place-items: center;
-      width: 1.5rem;
-      height: 1.5rem;
-      border: 1px solid var(--bone);
-      font-family: var(--font-mono);
-      font-size: 0.75rem;
-      font-weight: 700;
+    .brand-lockup {
+      display: block;
+      height: 2rem;
+      width: auto;
+    }
+
+    .brand-mark-only {
+      display: none;
+      width: 1.65rem;
+      height: 1.65rem;
+      flex: none;
     }
 
     .app-nav-links {
       display: flex;
       flex: 1;
+      min-width: 0;
       justify-content: flex-end;
       overflow-x: auto;
       scrollbar-width: none;
@@ -752,6 +751,12 @@
         --gutter: 1.25rem;
         --header-h: 6.75rem;
       }
+      .app-nav-links {
+        justify-content: flex-start;
+      }
+      .nav-cell-btn {
+        padding: 0 0.85rem;
+      }
       .surface-head {
         padding: 2.25rem 0 1.75rem;
       }
@@ -760,6 +765,18 @@
       }
       .action-row {
         grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .app-nav-brand {
+        padding: 0 0.85rem;
+      }
+      .brand-lockup {
+        display: none;
+      }
+      .brand-mark-only {
+        display: block;
       }
     }
 
@@ -785,8 +802,27 @@
     <nav class="app-nav" aria-label="BurnerApp">
       <div class="app-nav-frame">
         <div class="app-nav-brand">
-          <span class="app-nav-mark" aria-hidden="true">B</span>
-          <span>BurnerApp</span>
+          <svg class="brand-lockup" viewBox="0 0 154 36" fill="currentColor" role="img" aria-label="BurnerApp">
+            <g transform="translate(0 6)">
+              <rect x="2" y="3" width="12" height="3" />
+              <rect x="2" y="3" width="3" height="15" />
+              <rect x="2" y="15" width="12" height="3" />
+              <rect x="8" y="9" width="3" height="3" />
+              <rect x="16" y="6" width="6" height="3" />
+              <rect x="19" y="6" width="3" height="15" />
+              <rect x="16" y="18" width="6" height="3" />
+            </g>
+            <text x="34" y="27" font-size="30" style="font-family:var(--font-serif);letter-spacing:-0.02em">BurnerApp</text>
+          </svg>
+          <svg class="brand-mark-only" viewBox="0 0 24 24" fill="currentColor" role="img" aria-label="BurnerApp">
+            <rect x="2" y="3" width="12" height="3" />
+            <rect x="2" y="3" width="3" height="15" />
+            <rect x="2" y="15" width="12" height="3" />
+            <rect x="8" y="9" width="3" height="3" />
+            <rect x="16" y="6" width="6" height="3" />
+            <rect x="19" y="6" width="3" height="15" />
+            <rect x="16" y="18" width="6" height="3" />
+          </svg>
         </div>
         <div class="app-nav-links">
           <button class="nav-cell-btn" type="button" data-scenario="repo-triage">
