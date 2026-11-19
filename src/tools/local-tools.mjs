@@ -85,8 +85,11 @@ function parseNodeTestSummary(output) {
 function runDemoRepoTests(sandboxRoot) {
   const repoDir = path.join(sandboxRoot, "demo-repo");
   const start = performance.now();
-  const proc = spawnSync(process.execPath, ["--test", "auth-token.test.mjs"], {
+  const childEnv = { ...process.env };
+  delete childEnv.NODE_TEST_CONTEXT;
+  const proc = spawnSync(process.execPath, ["--test", "--test-reporter=spec", "auth-token.test.mjs"], {
     cwd: repoDir,
+    env: childEnv,
     encoding: "utf8",
     timeout: 15_000
   });
