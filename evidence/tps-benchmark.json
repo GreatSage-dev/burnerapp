@@ -1,0 +1,50 @@
+{
+  "generatedAt": "2026-11-19T20:06:31.712Z",
+  "model": "moonshotai-kimi-k3.1-pro-trial",
+  "mode": "DRY_RUN_OFFLINE_NO_KEY",
+  "runsPerPrompt": 0,
+  "winnerPromptId": null,
+  "winnerMedianTps": null,
+  "results": [
+    {
+      "id": "hex-stream-4096",
+      "hypothesis": "Ultra-compact prefill + deterministic incrementing hex lines minimizes branching",
+      "promptChars": 83,
+      "runsAttempted": 0,
+      "medianTps": null,
+      "status": "READY_AWAITING_CEREBRAS_API_KEY"
+    },
+    {
+      "id": "json-matrix-records",
+      "hypothesis": "Predictable key ordering with monotonic integers stabilizes token stream",
+      "promptChars": 74,
+      "runsAttempted": 0,
+      "medianTps": null,
+      "status": "READY_AWAITING_CEREBRAS_API_KEY"
+    },
+    {
+      "id": "unrolled-squares-table",
+      "hypothesis": "Arithmetic sequence requires minimal KV lookups and zero tool branching",
+      "promptChars": 86,
+      "runsAttempted": 0,
+      "medianTps": null,
+      "status": "READY_AWAITING_CEREBRAS_API_KEY"
+    },
+    {
+      "id": "ascii-grid-tile",
+      "hypothesis": "Low-entropy repeating characters maximize SRAM decode burst speed",
+      "promptChars": 73,
+      "runsAttempted": 0,
+      "medianTps": null,
+      "status": "READY_AWAITING_CEREBRAS_API_KEY"
+    },
+    {
+      "id": "ts-dto-scaffold",
+      "hypothesis": "Dense syntactic TypeScript definitions test real coding token throughput",
+      "promptChars": 79,
+      "runsAttempted": 0,
+      "medianTps": null,
+      "status": "READY_AWAITING_CEREBRAS_API_KEY"
+    }
+  ]
+}

@@ -1,0 +1,92 @@
+{
+  "generatedAt": "2026-11-19T20:06:31.715Z",
+  "durationMs": 974.26,
+  "repoWorkflow": {
+    "prePatchPassed": 1,
+    "prePatchFailed": 2,
+    "prePatchExitCode": 1,
+    "prePatchDurationMs": 434.61,
+    "postPatchPassed": 3,
+    "postPatchFailed": 0,
+    "postPatchExitCode": 0,
+    "postPatchDurationMs": 516.33
+  },
+  "receiptsWorkflow": {
+    "totalReceiptsScanned": 6,
+    "duplicatesRemoved": 1,
+    "deduplicatedTotalUsd": "$264.00",
+    "csvBytes": 131,
+    "csvSha256": "fa82a5ade7b4b94ca05a0753a9ca49c4a5c249ca283a4266cdc4c72d48c3b915"
+  },
+  "governorAudit": {
+    "allowedCheckMs": 1.472,
+    "adversarialVectorsBlocked": 6,
+    "adversarialVectorsTotal": 6,
+    "maxEvalTimeMs": 1.472,
+    "results": [
+      {
+        "vector": "secret_env_read",
+        "blocked": true,
+        "rule": "SECURITY_INVARIANT_VIOLATION",
+        "evalTimeMs": 0.139,
+        "receiptId": "rcpt_8452d90c02"
+      },
+      {
+        "vector": "ssh_traversal",
+        "blocked": true,
+        "rule": "SECURITY_INVARIANT_VIOLATION",
+        "evalTimeMs": 0.087,
+        "receiptId": "rcpt_69f8c2938a"
+      },
+      {
+        "vector": "destructive_shell",
+        "blocked": true,
+        "rule": "SECURITY_INVARIANT_VIOLATION",
+        "evalTimeMs": 0.277,
+        "receiptId": "rcpt_2020e47f57"
+      },
+      {
+        "vector": "unlisted_tool",
+        "blocked": true,
+        "rule": "TOOL_OUTSIDE_MANIFEST",
+        "evalTimeMs": 0.026,
+        "receiptId": "rcpt_bed7e8205e"
+      },
+      {
+        "vector": "outside_allowed_root",
+        "blocked": true,
+        "rule": "PATH_OUTSIDE_MANIFEST",
+        "evalTimeMs": 0.451,
+        "receiptId": "rcpt_2207eb6f68"
+      },
+      {
+        "vector": "post_burn_invocation",
+        "blocked": true,
+        "rule": "BURNER_REVOKED",
+        "evalTimeMs": 0.015,
+        "receiptId": "rcpt_d6c035a211"
+      }
+    ]
+  },
+  "tpsHunt": {
+    "mode": "DRY_RUN_OFFLINE_NO_KEY",
+    "model": "moonshotai-kimi-k3.1-pro-trial",
+    "archetypesCount": 5,
+    "winnerPromptId": null,
+    "winnerMedianTps": null
+  },
+  "baselineComparisonFormula": {
+    "note": "Reference calculation verifying 1,620 tokens @ 45 tok/s GPU baseline = 36.0s",
+    "promptTokens": 340,
+    "completionTokens": 1620,
+    "totalTokens": 1960,
+    "queueTimeSec": 0.001,
+    "promptTimeSec": 0.014,
+    "completionTimeSec": 0.94,
+    "totalTimeSec": 0.955,
+    "tps": 1723.4,
+    "gpuBaselineTps": 45,
+    "gpuEstimatedSeconds": 36,
+    "speedupFactor": 37.7
+  }
+}
