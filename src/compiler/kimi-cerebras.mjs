@@ -316,18 +316,22 @@ function buildSystemPrompt() {
 }
 
 function validateCompiledSpec(rawJson, fallbackPreset) {
-  const validTools = new Set([
-    "fs_bundle_inspect",
-    "repo_test_runner",
-    "repo_patch_apply",
-    "receipt_parse",
-    "csv_export"
-  ]);
+  const presetAllowed = new Set(fallbackPreset.allowedTools || []);
 
-  const parsed = typeof rawJson === "string" ? JSON.parse(rawJson) : rawJson;
+  let parsed;
+  try {
+    parsed = typeof rawJson === "string" ? JSON.parse(rawJson) : rawJson;
+  } catch {
+    return { ...fallbackPreset, specSource: "PARSE_FALLBACK" };
+  }
+
+  if (!parsed || typeof parsed !== "object") {
+    return { ...fallbackPreset, specSource: "PARSE_FALLBACK" };
+  }
+
   const actions = Array.isArray(parsed.actions)
     ? parsed.actions
-        .filter((a) => a && validTools.has(a.toolName) && typeof a.label === "string")
+        .filter((a) => a && presetAllowed.has(a.toolName) && typeof a.label === "string")
         .slice(0, 4)
         .map((a, idx) => ({
           id: String(a.id || `act-${idx + 1}`),
@@ -343,7 +347,9 @@ function validateCompiledSpec(rawJson, fallbackPreset) {
     return { ...fallbackPreset, specSource: "VALIDATED_FALLBACK" };
   }
 
-  const allowedTools = [...new Set(actions.map((a) => a.toolName))];
+  const allowedTools = [...new Set(actions.map((a) => a.toolName))].filter((tool) =>
+    presetAllowed.has(tool)
+  );
   return {
     ...fallbackPreset,
     title: typeof parsed.title === "string" && parsed.title.trim() ? parsed.title.trim().slice(0, 64) : fallbackPreset.title,
@@ -368,6 +374,7 @@ export async function callCerebrasChat({
   maxTokens = 1024,
   temperature = 0.2,
   promptCacheKey = "burnerapp-canvas-v1",
+  timeoutMs = 12_000,
   fetchImpl = fetch
 }) {
   const body = {
@@ -385,7 +392,8 @@ export async function callCerebrasChat({
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(timeoutMs)
   });
 
   const payload = await response.json().catch(() => ({}));

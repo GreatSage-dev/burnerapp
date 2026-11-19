@@ -107,11 +107,26 @@ export function createAppServer({
     };
   }
 
+  function isAllowedOrigin(req) {
+    const origin = req.headers.origin;
+    if (!origin) return true;
+    try {
+      const host = new URL(origin).hostname;
+      return host === "127.0.0.1" || host === "localhost" || host === "::1";
+    } catch {
+      return false;
+    }
+  }
+
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url || "/", "http://127.0.0.1");
     const pathname = url.pathname;
 
     try {
+      if (req.method === "POST" && !isAllowedOrigin(req)) {
+        sendJson(res, 403, { ok: false, error: "CROSS_ORIGIN_FORBIDDEN" });
+        return;
+      }
       if (req.method === "GET" && (pathname === "/" || pathname === "/judge")) {
         const htmlPath = path.join(PUBLIC_DIR, "index.html");
         const html = fs.readFileSync(htmlPath, "utf8");

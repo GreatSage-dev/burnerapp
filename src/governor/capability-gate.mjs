@@ -9,20 +9,19 @@ const SENSITIVE_PATH_PATTERNS = [
   /id_rsa|id_ed25519|\.pem$/i,
   /(^|[\\/])credentials(\.json)?$/i,
   /(^|[\\/])etc[\\/]passwd$/i,
-  /\.\.[/\\]/,
-  /^[/\\]\.\./
+  /(^|[\\/])\.\.([\\/]|$)/,
+  /%2e%2e/i
 ];
 
 const DANGEROUS_SHELL_PATTERNS = [
-  /\brm\s+-rf\b/i,
+  /\brm\s+-[a-z]*([rf]{2}|[fr]{2})/i,
   /\bdel\s+\/[sqf]/i,
   /\bmkfs\b/i,
   /\bformat\s+[a-z]:/i,
   /\bcurl\s+.*\|\s*(sh|bash)/i,
   /\bwget\s+.*\|\s*(sh|bash)/i,
-  /cat\s+.*\.env/i,
-  /type\s+.*\.env/i,
-  /printenv/i
+  /\b(cat|head|tail|more|less|type|base64)\b.*\.env/i,
+  /\bprintenv\b/i
 ];
 
 function extractStringValues(value, collected = []) {
@@ -39,29 +38,43 @@ function extractStringValues(value, collected = []) {
   return collected;
 }
 
-function normalizeRelPath(inputPath) {
-  return String(inputPath).replace(/\\/g, "/").replace(/^\.\//, "");
+function safeDecodePath(inputPath) {
+  try {
+    return decodeURIComponent(String(inputPath));
+  } catch {
+    return String(inputPath);
+  }
 }
 
-function isPathWithinAllowedRoots(candidatePath, allowedPaths) {
+function isPathWithinAllowedRoots(candidatePath, allowedPaths, workspaceRoot = process.cwd()) {
   if (!allowedPaths || allowedPaths.length === 0) return true;
-  const normalized = normalizeRelPath(candidatePath);
-  if (normalized.includes("..") || path.isAbsolute(candidatePath)) {
+  const raw = String(candidatePath || "");
+  if (/%2e/i.test(raw)) return false;
+
+  const decoded = safeDecodePath(raw);
+  if (!decoded || path.isAbsolute(decoded)) {
     return false;
   }
+
+  const resolvedRootDir = path.resolve(workspaceRoot);
+  const resolvedCandidate = path.resolve(resolvedRootDir, decoded);
+
   return allowedPaths.some((root) => {
-    const cleanRoot = normalizeRelPath(root).replace(/\/$/, "");
-    return normalized === cleanRoot || normalized.startsWith(`${cleanRoot}/`);
+    const resolvedAllowed = path.resolve(resolvedRootDir, String(root));
+    const rel = path.relative(resolvedAllowed, resolvedCandidate);
+    return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
   });
 }
 
 export class BurnerRegistry {
   constructor(options = {}) {
     this.secret = options.secret || crypto.randomBytes(32).toString("hex");
+    this.workspaceRoot = options.workspaceRoot || process.cwd();
     this.sessions = new Map();
     this.sessionKeyBindings = new Map();
     this.auditLog = [];
     this.maxAuditEntries = options.maxAuditEntries || 250;
+    this.maxSessions = options.maxSessions || 100;
   }
 
   spawnBurner({
@@ -72,6 +85,22 @@ export class BurnerRegistry {
     ttlMs = DEFAULT_TTL_MS,
     sessionKey = null
   }) {
+    if (this.sessions.size >= this.maxSessions) {
+      let evictKey = null;
+      for (const [id, existing] of this.sessions.entries()) {
+        if (existing.status !== "ACTIVE") {
+          evictKey = id;
+          break;
+        }
+      }
+      if (!evictKey) {
+        evictKey = this.sessions.keys().next().value;
+      }
+      if (evictKey) {
+        this.sessions.delete(evictKey);
+      }
+    }
+
     const burnerId = `brn_${crypto.randomBytes(6).toString("hex")}`;
     const issuedAt = Date.now();
     const expiresAt = issuedAt + ttlMs;
@@ -259,11 +288,14 @@ export class BurnerRegistry {
     const candidatePaths = [
       ...(params.path ? [params.path] : []),
       ...(params.file ? [params.file] : []),
+      ...(params.target ? [params.target] : []),
+      ...(params.cwd ? [params.cwd] : []),
+      ...(params.dir ? [params.dir] : []),
       ...(Array.isArray(event.derivedPaths) ? event.derivedPaths : [])
     ];
 
     for (const candidatePath of candidatePaths) {
-      if (!isPathWithinAllowedRoots(candidatePath, session.allowedPaths)) {
+      if (!isPathWithinAllowedRoots(candidatePath, session.allowedPaths, this.workspaceRoot)) {
         session.blockedCount += 1;
         return finish(
           "BLOCKED",
