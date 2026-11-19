@@ -1,0 +1,14 @@
+{
+  "name": "demo-auth-service",
+  "version": "1.2.4",
+  "type": "module",
+  "dependencies": {
+    "zod": "3.23.8",
+    "left-pad": "1.3.0",
+    "moment-timezone-legacy": "0.5.43"
+  },
+  "unusedDependencies": [
+    "left-pad",
+    "moment-timezone-legacy"
+  ]
+}

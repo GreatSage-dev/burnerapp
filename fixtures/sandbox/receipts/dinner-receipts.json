@@ -1,0 +1,62 @@
+{
+  "event": "Cerebras Hackathon Team Dinner & Transit",
+  "currency": "USD",
+  "participants": ["Maya", "Alex", "Sam", "Diyi"],
+  "receipts": [
+    {
+      "id": "RCP-101",
+      "merchant": "Marufuku Ramen SF",
+      "category": "Dinner",
+      "paidBy": "Maya",
+      "amountCents": 14880,
+      "timestamp": "2026-11-19T19:12:00Z",
+      "splitAmong": ["Maya", "Alex", "Sam", "Diyi"]
+    },
+    {
+      "id": "RCP-102",
+      "merchant": "Waymo Autonomous Ride",
+      "category": "Transit",
+      "paidBy": "Alex",
+      "amountCents": 2640,
+      "timestamp": "2026-11-19T20:04:10Z",
+      "splitAmong": ["Maya", "Alex", "Sam", "Diyi"]
+    },
+    {
+      "id": "RCP-103",
+      "merchant": "Sightglass Coffee Roasters",
+      "category": "Drinks",
+      "paidBy": "Diyi",
+      "amountCents": 2480,
+      "timestamp": "2026-11-19T20:22:00Z",
+      "splitAmong": ["Maya", "Alex", "Sam", "Diyi"]
+    },
+    {
+      "id": "RCP-104-DUP",
+      "merchant": "Waymo Autonomous Ride",
+      "category": "Transit",
+      "paidBy": "Alex",
+      "amountCents": 2640,
+      "timestamp": "2026-11-19T20:05:02Z",
+      "duplicateOf": "RCP-102",
+      "splitAmong": ["Maya", "Alex", "Sam", "Diyi"]
+    },
+    {
+      "id": "RCP-105",
+      "merchant": "Tartine Bakery Late Snacks",
+      "category": "Dessert",
+      "paidBy": "Sam",
+      "amountCents": 4200,
+      "timestamp": "2026-11-19T20:45:00Z",
+      "splitAmong": ["Maya", "Alex", "Sam", "Diyi"]
+    },
+    {
+      "id": "RCP-106",
+      "merchant": "Table Service Tip Adjustment",
+      "category": "Tip",
+      "paidBy": "Maya",
+      "amountCents": 2200,
+      "timestamp": "2026-11-19T20:50:00Z",
+      "splitAmong": ["Maya", "Alex", "Sam", "Diyi"]
+    }
+  ]
+}
