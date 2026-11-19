@@ -1,0 +1,52 @@
+{
+  "name": "burnerapp",
+  "version": "1.0.0",
+  "description": "Burner phones, for software: 1-second local micro-apps inside OpenClaw Canvas powered by Kimi K3.1 Pro on Cerebras, governed by before_tool_call capability manifests.",
+  "type": "module",
+  "main": "./index.mjs",
+  "exports": {
+    ".": "./index.mjs"
+  },
+  "scripts": {
+    "start": "node src/server.mjs",
+    "dev": "node --watch src/server.mjs",
+    "test": "node --test tests/burnerapp.test.mjs",
+    "smoke": "node scripts/smoke.mjs",
+    "check:words": "node scripts/plain-words-check.mjs",
+    "evidence": "node scripts/evidence.mjs",
+    "tps:hunt": "node scripts/tps-hunt.mjs",
+    "verify": "npm run check:words && npm test && npm run smoke && npm run evidence"
+  },
+  "keywords": [
+    "openclaw",
+    "openclaw-plugin",
+    "cerebras",
+    "kimi",
+    "kimi-k3.1-pro",
+    "generative-ui",
+    "capability-security"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "openclaw": {
+    "compat": {
+      "pluginApi": ">=2026.11.6"
+    },
+    "extensions": [
+      "./index.mjs"
+    ],
+    "install": {
+      "minHostVersion": ">=2026.6.8"
+    }
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.11.6"
+  },
+  "peerDependenciesMeta": {
+    "openclaw": {
+      "optional": true
+    }
+  }
+}
