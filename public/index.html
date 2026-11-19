@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BurnerApp — 1-Second Disposable Micro-Apps on Cerebras &amp; OpenClaw</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-base: #09090b;
+      --bg-surface: #121215;
+      --bg-elevated: #18181b;
+      --border-hairline: #27272a;
+      --border-strong: #3f3f46;
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --accent-wafer: #f97316;
+      --accent-wafer-dim: rgba(249, 115, 22, 0.14);
+      --accent-emerald: #10b981;
+      --accent-emerald-dim: rgba(16, 185, 129, 0.14);
+      --accent-rose: #f43f5e;
+      --accent-rose-dim: rgba(244, 63, 94, 0.14);
+      --accent-amber: #f59e0b;
+      --accent-amber-dim: rgba(245, 158, 11, 0.14);
+      --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: clip;
+    }
+
+    .mono {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .app-shell {
+      max-width: 1360px;
+      margin: 0 auto;
+      padding: 16px 24px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Top Telemetry Header */
+    .topbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: 10px;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-mark {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--accent-wafer-dim);
+      border: 1px solid rgba(249, 115, 22, 0.45);
+      color: var(--accent-wafer);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 16px;
+    }
+
+    .brand-title {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 0;
+    }
+
+    .brand-sub {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin: 2px 0 0;
+    }
+
+    .telemetry-pills {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border-hairline);
+      background: var(--bg-elevated);
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .pill-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent-emerald);
+    }
+
+    .pill-dot.amber {
+      background: var(--accent-amber);
+    }
+
+    /* Command & Preset Strip */
+    .command-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 16px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: 10px;
+    }
+
+    .preset-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .preset-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .prompt-form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .prompt-input {
+      flex: 1 1 320px;
+      background: var(--bg-base);
+      border: 1px solid var(--border-hairline);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 140ms ease;
+    }
+
+    .prompt-input:focus-visible {
+      border-color: var(--accent-wafer);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 9px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border-hairline);
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 90ms ease, border-color 140ms ease, background 140ms ease;
+    }
+
+    .btn:hover:not(:disabled) {
+      border-color: var(--border-strong);
+      background: #222226;
+    }
+
+    .btn:active:not(:disabled) {
+      transform: scale(0.985);
+    }
+
+    .btn:focus-visible {
+      outline: 2px solid var(--accent-wafer);
+      outline-offset: 2px;
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--accent-wafer);
+      border-color: var(--accent-wafer);
+      color: #09090b;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #fb923c;
+      border-color: #fb923c;
+    }
+
+    .btn-emerald {
+      background: var(--accent-emerald-dim);
+      border-color: rgba(16, 185, 129, 0.45);
+      color: var(--accent-emerald);
+    }
+
+    .btn-emerald:hover:not(:disabled) {
+      background: rgba(16, 185, 129, 0.24);
+      border-color: var(--accent-emerald);
+    }
+
+    .btn-danger {
+      background: var(--accent-rose-dim);
+      border-color: rgba(244, 63, 94, 0.45);
+      color: var(--accent-rose);
+    }
+
+    .btn-danger:hover:not(:disabled) {
+      background: rgba(244, 63, 94, 0.24);
+      border-color: var(--accent-rose);
+    }
+
+    .btn-sm {
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+
+    /* 15-Second Split-Screen Arena */
+    .arena-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.25fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    @media (max-width: 960px) {
+      .arena-grid {
+        grid-template-columns: 1fr;
+      }
+      .app-shell {
+        padding: 12px 16px 24px;
+      }
+    }
+
+    .pane {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      min-height: 440px;
+      overflow: hidden;
+    }
+
+    .pane-right {
+      border-color: rgba(249, 115, 22, 0.38);
+    }
+
+    .pane-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-hairline);
+      background: var(--bg-elevated);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .pane-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+
+    .pane-label.wafer {
+      color: var(--accent-wafer);
+    }
+
+    .pane-body {
+      padding: 16px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* GPU Crawling Ticker */
+    .gpu-clock-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .gpu-timer {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--accent-amber);
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--bg-base);
+      border: 1px solid var(--border-hairline);
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent-amber);
+      transition: width 120ms linear;
+    }
+
+    .progress-fill.done {
+      background: var(--accent-emerald);
+    }
+
+    .code-stream {
+      flex: 1;
+      margin: 0;
+      padding: 12px;
+      background: var(--bg-base);
+      border: 1px solid var(--border-hairline);
+      border-radius: 8px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.55;
+      color: var(--text-secondary);
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 240px;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+
+    /* Right Pane BurnerApp Canvas */
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 32px 20px;
+      gap: 12px;
+      border: 1px dashed var(--border-hairline);
+      border-radius: 8px;
+      background: var(--bg-base);
+    }
+
+    .skeleton-box {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 16px;
+      background: var(--bg-base);
+      border: 1px solid var(--border-hairline);
+      border-radius: 8px;
+    }
+
+    .skeleton-line {
+      height: 14px;
+      border-radius: 4px;
+      background: linear-gradient(90deg, #18181b 25%, #27272a 50%, #18181b 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.1s infinite linear;
+    }
+
+    @keyframes shimmer {
+      from { background-position: 200% 0; }
+      to { background-position: -200% 0; }
+    }
+
+    .manifest-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: var(--bg-base);
+      border: 1px solid var(--border-hairline);
+      font-size: 12px;
+    }
+
+    .status-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .status-tag.active {
+      background: var(--accent-emerald-dim);
+      color: var(--accent-emerald);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+
+    .status-tag.burned {
+      background: var(--accent-rose-dim);
+      color: var(--accent-rose);
+      border: 1px solid rgba(244, 63, 94, 0.45);
+    }
+
+    .burner-app-card {
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border-hairline);
+      background: var(--bg-base);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: opacity 160ms ease, border-color 160ms ease;
+    }
+
+    .burner-app-card.burned {
+      border-color: rgba(244, 63, 94, 0.45);
+      background: linear-gradient(180deg, rgba(244, 63, 94, 0.05), var(--bg-base));
+    }
+
+    .action-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .redteam-strip {
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(244, 63, 94, 0.3);
+      background: rgba(244, 63, 94, 0.04);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .tool-output {
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-hairline);
+      background: #0d0d10;
+      font-size: 12px;
+      line-height: 1.5;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .tool-output.blocked {
+      border-color: rgba(244, 63, 94, 0.55);
+      background: rgba(244, 63, 94, 0.08);
+    }
+
+    .tool-output.allowed {
+      border-color: rgba(16, 185, 129, 0.45);
+    }
+
+    .error-banner {
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(244, 63, 94, 0.5);
+      background: var(--accent-rose-dim);
+      color: #fecdd3;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 13px;
+    }
+
+    /* Audit Ledger */
+    .ledger-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .ledger-table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      text-align: left;
+    }
+
+    th {
+      padding: 10px 14px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-hairline);
+      background: var(--bg-elevated);
+    }
+
+    td {
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--border-hairline);
+      color: var(--text-secondary);
+      vertical-align: top;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .decision-allowed {
+      color: var(--accent-emerald);
+      font-weight: 700;
+    }
+
+    .decision-blocked {
+      color: var(--accent-rose);
+      font-weight: 700;
+    }
+
+    .byok-drawer {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border-hairline);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Top Bar -->
+    <header class="topbar">
+      <div class="brand-group">
+        <div class="brand-mark">B</div>
+        <div>
+          <h1 class="brand-title">BurnerApp <span class="mono" style="color:var(--accent-wafer);font-size:12px;">v1.0</span></h1>
+          <p class="brand-sub">Burner phones, for software — 1s local micro-apps inside OpenClaw Canvas</p>
+        </div>
+      </div>
+
+      <div class="telemetry-pills">
+        <span class="pill mono">
+          <span id="api-dot" class="pill-dot amber"></span>
+          <span id="model-badge">moonshotai-kimi-k3.1-pro-trial</span>
+        </span>
+        <span class="pill mono">
+          TPM: <strong id="tpm-used" style="color:var(--text-primary)">0</strong> / 100,000
+        </span>
+        <button id="toggle-byok-btn" class="btn btn-sm" type="button">BYOK Key</button>
+        <button id="reset-sandbox-btn" class="btn btn-sm" type="button">Reset Sandbox</button>
+      </div>
+    </header>
+
+    <!-- Error Banner -->
+    <div id="error-banner" class="error-banner hidden" role="alert">
+      <span id="error-text"></span>
+      <button id="error-retry-btn" class="btn btn-sm" type="button">Dismiss</button>
+    </div>
+
+    <!-- Command & Scenario Bar -->
+    <section class="command-bar" aria-label="Task launcher">
+      <div class="preset-row">
+        <div class="preset-buttons">
+          <button class="btn btn-primary" type="button" data-scenario="repo-triage">
+            1. Repo Bug &amp; Test Fixer (Dev)
+          </button>
+          <button class="btn" type="button" data-scenario="bill-splitter">
+            2. 6-Receipt Bill Splitter (Everyday)
+          </button>
+          <button class="btn" type="button" data-scenario="security-audit">
+            3. Capability Boundary Lab (50/50)
+          </button>
+        </div>
+        <span class="mono" style="font-size:12px;color:var(--text-muted)">
+          OpenClaw Hook: <strong style="color:var(--accent-emerald)">before_tool_call (priority 100)</strong>
+        </span>
+      </div>
+
+      <form id="spawn-form" class="prompt-form">
+        <input
+          id="prompt-input"
+          class="prompt-input"
+          type="text"
+          placeholder="Describe a local task to spawn a scoped 1-second micro-app..."
+          value="Inspect my local auth repo for failing tests and unused packages, and give me switches to patch and re-verify it."
+        />
+        <button id="spawn-btn" class="btn btn-primary" type="submit">Spawn BurnerApp</button>
+      </form>
+
+      <div id="byok-drawer" class="byok-drawer hidden">
+        <span style="font-size:12px;color:var(--text-secondary)">Optional Cerebras API Key (in-memory only, never saved):</span>
+        <input id="byok-input" class="prompt-input mono" style="max-width:340px;padding:6px 10px;font-size:12px;" type="password" placeholder="csk-..." />
+        <button id="byok-save-btn" class="btn btn-sm btn-emerald" type="button">Use Live Key</button>
+      </div>
+    </section>
+
+    <!-- 15-Second Split-Screen Arena -->
+    <main class="arena-grid">
+      <!-- Left Pane: Naive GPU Baseline -->
+      <section class="pane" aria-label="Naive GPU Baseline">
+        <div class="pane-header">
+          <span class="pane-label">Left Screen · Naive GPU (~45 tok/s)</span>
+          <span id="gpu-status-pill" class="pill mono" style="padding:3px 8px;font-size:11px;">IDLE</span>
+        </div>
+        <div class="pane-body">
+          <div class="gpu-clock-row">
+            <span style="font-size:13px;color:var(--text-secondary)">Sequential HTML/JS Generation Clock</span>
+            <span id="gpu-timer" class="gpu-timer mono">00.0s</span>
+          </div>
+          <div class="progress-track">
+            <div id="gpu-progress" class="progress-fill"></div>
+          </div>
+          <pre id="gpu-stream" class="code-stream">Waiting for task launch...
+
+On standard ~45 tok/s GPU inference, generating a 1,620-token wired UI takes ~36 seconds before the user can click a single button.</pre>
+        </div>
+      </section>
+
+      <!-- Right Pane: BurnerApp on Cerebras + OpenClaw Canvas -->
+      <section class="pane pane-right" aria-label="BurnerApp on Cerebras">
+        <div class="pane-header">
+          <span class="pane-label wafer">Right Screen · BurnerApp (Cerebras + OpenClaw Canvas)</span>
+          <span id="cerebras-speed-pill" class="pill mono" style="padding:3px 8px;font-size:11px;color:var(--accent-wafer);">READY</span>
+        </div>
+        <div id="right-pane-body" class="pane-body">
+          <div class="empty-state">
+            <div style="font-size:15px;font-weight:700;">No BurnerApp active yet</div>
+            <p style="margin:0;font-size:13px;color:var(--text-secondary);max-width:420px;">
+              Click <strong>1. Repo Bug &amp; Test Fixer</strong> or <strong>2. 6-Receipt Bill Splitter</strong> above to spawn a scoped micro-app and test the OpenClaw safety governor live.
+            </p>
+            <button id="empty-quick-btn" class="btn btn-primary" type="button">Launch Scenario 1 Now</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Bottom Audit Receipt Ledger -->
+    <section class="ledger-panel" aria-label="OpenClaw before_tool_call Audit Ledger">
+      <div class="pane-header">
+        <span class="pane-label">OpenClaw before_tool_call Audit Ledger (50/50 Accelerator &amp; Governor Receipts)</span>
+        <span id="ledger-count" class="mono" style="font-size:12px;color:var(--text-muted)">0 receipts</span>
+      </div>
+      <div class="ledger-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Decision</th>
+              <th>Rule</th>
+              <th>Tool</th>
+              <th>Eval Time</th>
+              <th>Receipt SHA-256</th>
+              <th>Reason</th>
+            </tr>
+          </thead>
+          <tbody id="ledger-body">
+            <tr>
+              <td colspan="6" style="text-align:center;color:var(--text-muted);padding:18px;">
+                No tool calls evaluated yet. Spawn a BurnerApp and trigger an action or /rob probe.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const state = {
+      activeSession: null,
+      activeCompiled: null,
+      lastToolOutcome: null,
+      gpuTimerId: null,
+      byokKey: "",
+      isSpawning: false
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function showError(msg) {
+      $("error-text").textContent = msg;
+      $("error-banner").classList.remove("hidden");
+    }
+
+    function hideError() {
+      $("error-banner").classList.add("hidden");
+    }
+
+    function startGpuCrawl(compiled) {
+      if (state.gpuTimerId) {
+        clearInterval(state.gpuTimerId);
+        state.gpuTimerId = null;
+      }
+
+      const estimatedSeconds = Math.max(8, compiled?.telemetry?.gpuEstimatedSeconds || 16.5);
+      const lines = compiled?.spec?.sampleCodeStream || ["<div>Generating UI...</div>"];
+      const fullText = lines.join("\n") + "\n<!-- Waiting for remaining tool bindings... -->";
+      const startMs = performance.now();
+
+      $("gpu-status-pill").textContent = "STREAMING @ 45 tok/s";
+      $("gpu-status-pill").style.color = "var(--accent-amber)";
+      $("gpu-progress").classList.remove("done");
+      $("gpu-progress").style.width = "2%";
+
+      state.gpuTimerId = setInterval(() => {
+        const elapsedSec = (performance.now() - startMs) / 1000;
+        const pct = Math.min(100, (elapsedSec / estimatedSeconds) * 100);
+        const charCount = Math.floor((pct / 100) * fullText.length);
+
+        $("gpu-timer").textContent = `${elapsedSec.toFixed(1)}s / ${estimatedSeconds.toFixed(1)}s`;
+        $("gpu-progress").style.width = `${pct.toFixed(1)}%`;
+        $("gpu-stream").textContent = fullText.slice(0, Math.max(12, charCount)) + (pct < 100 ? "▌" : "\n\n[GPU UI READY]");
+
+        if (pct >= 100) {
+          clearInterval(state.gpuTimerId);
+          state.gpuTimerId = null;
+          $("gpu-status-pill").textContent = "FINISHED LATE";
+          $("gpu-status-pill").style.color = "var(--accent-emerald)";
+          $("gpu-progress").classList.add("done");
+        }
+      }, 90);
+    }
+
+    function renderLoadingRightPane() {
+      $("cerebras-speed-pill").textContent = "COMPILING...";
+      $("right-pane-body").innerHTML = `
+        <div class="skeleton-box" aria-busy="true">
+          <div class="skeleton-line" style="width:55%"></div>
+          <div class="skeleton-line" style="width:85%"></div>
+          <div class="skeleton-line" style="width:40%"></div>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <div class="skeleton-line" style="width:140px;height:36px;"></div>
+            <div class="skeleton-line" style="width:140px;height:36px;"></div>
+          </div>
+        </div>
+      `;
+    }
+
+    function formatToolResultHtml(outcome) {
+      if (!outcome) {
+        return `<div style="color:var(--text-muted)">Click any scoped action button above to run a real local tool, or click a red-team probe to test OpenClaw interception.</div>`;
+      }
+
+      if (outcome.blocked) {
+        return `
+          <div style="color:var(--accent-rose);font-weight:700;margin-bottom:6px;">
+            BLOCKED BY OPENCLAW before_tool_call HOOK
+          </div>
+          <div class="mono" style="color:#fecdd3;">${escapeHtml(outcome.blockReason)}</div>
+          <div class="mono" style="margin-top:6px;font-size:11px;color:var(--text-secondary);">
+            Receipt: ${escapeHtml(outcome.receipt?.receiptId || "")} · Eval: ${escapeHtml(outcome.receipt?.evalTimeMs || 0)}ms · SHA-256: ${escapeHtml((outcome.receipt?.sha256 || "").slice(0, 16))}...
+          </div>
+        `;
+      }
+
+      return `
+        <div style="color:var(--accent-emerald);font-weight:700;margin-bottom:6px;">
+          EXECUTED REAL LOCAL TOOL: ${escapeHtml(outcome.toolName)} (Receipt ${escapeHtml(outcome.receipt?.receiptId || "")})
+        </div>
+        <pre class="mono" style="margin:0;white-space:pre-wrap;color:var(--text-primary);">${escapeHtml(JSON.stringify(outcome.toolResult, null, 2))}</pre>
+      `;
+    }
+
+    function renderRightPane() {
+      const session = state.activeSession;
+      const compiled = state.activeCompiled;
+      if (!session || !compiled) return;
+
+      const isBurned = session.status === "BURNED";
+      const spec = compiled.spec;
+      const tel = compiled.telemetry || {};
+      const speedBadge =
+        compiled.sourceMode === "LIVE_CEREBRAS_API" && tel.tps
+          ? `${tel.tps} tok/s (${tel.totalTimeSec}s)`
+          : `REPLAY FIXTURE (${compiled.localCompileMs}ms local)`;
+
+      $("cerebras-speed-pill").textContent = speedBadge;
+
+      const actionsHtml = (spec.actions || [])
+        .map(
+          (act) => `
+          <button
+            class="btn ${act.style === "primary" ? "btn-emerald" : ""}"
+            type="button"
+            data-action-id="${escapeHtml(act.id)}"
+            title="${escapeHtml(act.description || "")}"
+          >
+            ${escapeHtml(act.label)}
+          </button>
+        `
+        )
+        .join("");
+
+      const redTeamHtml = (spec.adversarialActions || [])
+        .map(
+          (probe) => `
+          <button
+            class="btn btn-sm btn-danger"
+            type="button"
+            data-probe-id="${escapeHtml(probe.id)}"
+          >
+            ${escapeHtml(probe.label)}
+          </button>
+        `
+        )
+        .join("");
+
+      const outcomeClass = state.lastToolOutcome
+        ? state.lastToolOutcome.blocked
+          ? "blocked"
+          : "allowed"
+        : "";
+
+      $("right-pane-body").innerHTML = `
+        <div class="manifest-bar mono">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span class="status-tag ${isBurned ? "burned" : "active"}">${escapeHtml(session.status)}</span>
+            <span>ID: <strong style="color:var(--text-primary)">${escapeHtml(session.burnerId)}</strong></span>
+            <span>Mode: <strong style="color:var(--accent-wafer)">${escapeHtml(compiled.sourceMode)}</strong></span>
+          </div>
+          <span>Allowed: ${escapeHtml(session.allowedTools.join(", "))}</span>
+        </div>
+
+        <div class="burner-app-card ${isBurned ? "burned" : ""}">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+            <div>
+              <div class="mono" style="font-size:11px;color:var(--accent-wafer);font-weight:600;">${escapeHtml(spec.badge || "BURNERAPP CANVAS")}</div>
+              <h2 style="margin:4px 0;font-size:18px;font-weight:700;">${escapeHtml(spec.title)}</h2>
+              <p style="margin:0;font-size:13px;color:var(--text-secondary);">${escapeHtml(spec.summary)}</p>
+            </div>
+            <button id="burn-app-btn" class="btn btn-danger btn-sm" type="button" ${isBurned ? "disabled" : ""}>
+              ${isBurned ? "App Burned (Token Wiped)" : "Burn App (Revoke Token)"}
+            </button>
+          </div>
+
+          <div class="action-grid">
+            ${actionsHtml}
+          </div>
+
+          <div class="redteam-strip">
+            <span style="font-size:12px;font-weight:600;color:#fda4af;">
+              /rob Adversarial Governor Probes (Prove 50/50 Brake):
+            </span>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;">
+              ${redTeamHtml}
+              <button id="probe-after-burn-btn" class="btn btn-sm btn-danger" type="button">
+                Try Call After Burn
+              </button>
+            </div>
+          </div>
+
+          <div class="tool-output ${outcomeClass}">
+            ${formatToolResultHtml(state.lastToolOutcome)}
+          </div>
+        </div>
+      `;
+
+      document.querySelectorAll("[data-action-id]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const act = spec.actions.find((a) => a.id === btn.dataset.actionId);
+          if (act) invokeToolCall(act.toolName, act.params);
+        });
+      });
+
+      document.querySelectorAll("[data-probe-id]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const probe = (spec.adversarialActions || []).find((p) => p.id === btn.dataset.probeId);
+          if (probe) invokeToolCall(probe.toolName, probe.params);
+        });
+      });
+
+      $("burn-app-btn")?.addEventListener("click", burnActiveApp);
+      $("probe-after-burn-btn")?.addEventListener("click", async () => {
+        if (!isBurned && state.activeSession) {
+          await burnActiveApp();
+        }
+        const firstAct = spec.actions[0];
+        if (firstAct) {
+          await invokeToolCall(firstAct.toolName, firstAct.params);
+        }
+      });
+    }
+
+    function renderLedger(auditLog = []) {
+      $("ledger-count").textContent = `${auditLog.length} receipt${auditLog.length === 1 ? "" : "s"}`;
+      if (auditLog.length === 0) {
+        $("ledger-body").innerHTML = `
+          <tr>
+            <td colspan="6" style="text-align:center;color:var(--text-muted);padding:18px;">
+              No tool calls evaluated yet. Spawn a BurnerApp and trigger an action or /rob probe.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      $("ledger-body").innerHTML = auditLog
+        .map(
+          (entry) => `
+          <tr>
+            <td class="mono ${entry.decision === "ALLOWED" ? "decision-allowed" : "decision-blocked"}">${escapeHtml(entry.decision)}</td>
+            <td class="mono">${escapeHtml(entry.rule)}</td>
+            <td class="mono">${escapeHtml(entry.toolName)}</td>
+            <td class="mono">${escapeHtml(entry.evalTimeMs)}ms</td>
+            <td class="mono">${escapeHtml((entry.sha256 || "").slice(0, 14))}...</td>
+            <td>${escapeHtml(entry.reason)}</td>
+          </tr>
+        `
+        )
+        .join("");
+    }
+
+    function updateStatusHeader(status) {
+      if (!status) return;
+      $("model-badge").textContent = status.model;
+      $("tpm-used").textContent = Number(status.tpmStatus?.usedTokens || 0).toLocaleString();
+      const hasLive = status.hasServerApiKey || Boolean(state.byokKey);
+      $("api-dot").classList.toggle("amber", !hasLive);
+      renderLedger(status.auditLog || []);
+    }
+
+    async function spawnScenario({ scenarioId = "", prompt = "" } = {}) {
+      if (state.isSpawning) return;
+      state.isSpawning = true;
+      hideError();
+      renderLoadingRightPane();
+
+      try {
+        const res = await fetch("/api/spawn", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            scenarioId,
+            prompt,
+            apiKey: state.byokKey || undefined
+          })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          throw new Error(data.error || `HTTP ${res.status}`);
+        }
+
+        state.activeSession = data.session;
+        state.activeCompiled = data.compiled;
+        state.lastToolOutcome = null;
+
+        updateStatusHeader(data.status);
+        startGpuCrawl(data.compiled);
+        renderRightPane();
+      } catch (err) {
+        showError(`Spawn failed: ${err.message}`);
+      } finally {
+        state.isSpawning = false;
+      }
+    }
+
+    async function invokeToolCall(toolName, params) {
+      if (!state.activeSession) return;
+      hideError();
+      try {
+        const res = await fetch("/api/tool-call", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            burnerId: state.activeSession.burnerId,
+            toolName,
+            params
+          })
+        });
+        const data = await res.json();
+        state.lastToolOutcome = data;
+        if (data.session) state.activeSession = data.session;
+        if (data.auditLog) renderLedger(data.auditLog);
+        renderRightPane();
+      } catch (err) {
+        showError(`Tool call failed: ${err.message}`);
+      }
+    }
+
+    async function burnActiveApp() {
+      if (!state.activeSession) return;
+      hideError();
+      try {
+        const res = await fetch("/api/burn", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ burnerId: state.activeSession.burnerId })
+        });
+        const data = await res.json();
+        if (data.session) state.activeSession = data.session;
+        if (data.auditLog) renderLedger(data.auditLog);
+        renderRightPane();
+      } catch (err) {
+        showError(`Burn failed: ${err.message}`);
+      }
+    }
+
+    async function resetDemoSandbox() {
+      hideError();
+      try {
+        const res = await fetch("/api/reset", { method: "POST" });
+        const data = await res.json();
+        updateStatusHeader(data.status);
+        state.lastToolOutcome = null;
+        if (state.activeSession) renderRightPane();
+      } catch (err) {
+        showError(`Reset failed: ${err.message}`);
+      }
+    }
+
+    // Wire events
+    document.querySelectorAll("[data-scenario]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.scenario;
+        spawnScenario({ scenarioId: id });
+      });
+    });
+
+    $("empty-quick-btn")?.addEventListener("click", () => {
+      spawnScenario({ scenarioId: "repo-triage" });
+    });
+
+    $("spawn-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      spawnScenario({ prompt: $("prompt-input").value });
+    });
+
+    $("toggle-byok-btn").addEventListener("click", () => {
+      $("byok-drawer").classList.toggle("hidden");
+    });
+
+    $("byok-save-btn").addEventListener("click", () => {
+      state.byokKey = $("byok-input").value.trim();
+      $("byok-drawer").classList.add("hidden");
+      $("api-dot").classList.toggle("amber", !state.byokKey);
+    });
+
+    $("reset-sandbox-btn").addEventListener("click", resetDemoSandbox);
+    $("error-retry-btn").addEventListener("click", hideError);
+
+    // Initial hydration
+    fetch("/api/status")
+      .then((r) => r.json())
+      .then((status) => updateStatusHeader(status))
+      .catch(() => {});
+  </script>
+</body>
+</html>
