@@ -1,8 +1,10 @@
 import test, { after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 
+import handler from "../api/index.mjs";
 import { BurnerRegistry, createBurnerPlugin } from "../index.mjs";
 import { executeLocalTool, resetSandbox } from "../src/tools/local-tools.mjs";
 import {
@@ -470,4 +472,111 @@ test("23. Compiler falls back to secondary Cerebras model when primary trial mod
   assert.equal(compiled.sourceMode, "LIVE_CEREBRAS_API");
   assert.equal(compiled.modelUsed, "zai-glm-4.7");
   assert.deepEqual(attemptedModels, ["moonshotai-kimi-k3.1-pro-trial", "zai-glm-4.7"]);
+});
+
+async function invokeVercelHandler({ method = "GET", url, headers = {}, body } = {}) {
+  return new Promise((resolve, reject) => {
+    const req = { method, url, headers, body };
+    let statusCode = 200;
+    let responseHeaders = {};
+    const res = {
+      writeHead(code, hdrs = {}) {
+        statusCode = code;
+        responseHeaders = hdrs;
+      },
+      end(chunk = "") {
+        const text = Buffer.isBuffer(chunk) ? chunk.toString("utf8") : String(chunk);
+        let json = null;
+        try {
+          json = JSON.parse(text);
+        } catch {
+          json = null;
+        }
+        resolve({ statusCode, headers: responseHeaders, text, json });
+      }
+    };
+    Promise.resolve(handler(req, res)).catch(reject);
+  });
+}
+
+test("24. Vercel serverless handler serves /api/* via __path rewrite, pre-parsed req.body, same-origin host, and /tmp sandbox", async () => {
+  const prevVercel = process.env.VERCEL;
+  const tmpSandbox = path.join(os.tmpdir(), "burnerapp-sandbox");
+  fs.rmSync(tmpSandbox, { recursive: true, force: true });
+  process.env.VERCEL = "1";
+
+  try {
+    const statusRes = await invokeVercelHandler({
+      method: "GET",
+      url: "/api/index.mjs?__path=status"
+    });
+    assert.equal(statusRes.statusCode, 200);
+    assert.equal(statusRes.json?.ok, true);
+
+    const previewHeaders = {
+      origin: "https://burnerapp-preview.vercel.app",
+      "x-forwarded-host": "burnerapp-preview.vercel.app"
+    };
+
+    const spawnRes = await invokeVercelHandler({
+      method: "POST",
+      url: "/api/index.mjs?__path=spawn",
+      headers: previewHeaders,
+      body: { scenarioId: "repo-triage" }
+    });
+    assert.equal(spawnRes.statusCode, 200);
+    assert.equal(spawnRes.json?.ok, true);
+    const burnerId = spawnRes.json.session.burnerId;
+
+    const patchRes = await invokeVercelHandler({
+      method: "POST",
+      url: "/api/index.mjs?__path=tool-call",
+      headers: previewHeaders,
+      body: { burnerId, toolName: "repo_patch_apply", params: {} }
+    });
+    assert.equal(patchRes.statusCode, 200);
+    assert.equal(patchRes.json?.ok, true);
+    assert.equal(patchRes.json.toolResult.testResult.passed, 3);
+    assert.equal(patchRes.json.toolResult.testResult.exitCode, 0);
+    assert.equal(fs.existsSync(path.join(tmpSandbox, "demo-repo", "auth-token.mjs")), true);
+
+    const robRes = await invokeVercelHandler({
+      method: "POST",
+      url: "/api/index.mjs?__path=tool-call",
+      headers: previewHeaders,
+      body: { burnerId, toolName: "exec", params: { command: "rm -rf /" } }
+    });
+    assert.equal(robRes.statusCode, 403);
+    assert.equal(robRes.json?.blocked, true);
+
+    const burnRes = await invokeVercelHandler({
+      method: "POST",
+      url: "/api/index.mjs?__path=burn",
+      headers: previewHeaders,
+      body: { burnerId }
+    });
+    assert.equal(burnRes.statusCode, 200);
+    assert.equal(burnRes.json?.burned, true);
+  } finally {
+    if (prevVercel === undefined) {
+      delete process.env.VERCEL;
+    } else {
+      process.env.VERCEL = prevVercel;
+    }
+    fs.rmSync(tmpSandbox, { recursive: true, force: true });
+  }
+});
+
+test("25. Vercel serverless handler still blocks mismatched external Origin with HTTP 403 CROSS_ORIGIN_FORBIDDEN", async () => {
+  const res = await invokeVercelHandler({
+    method: "POST",
+    url: "/api/index.mjs?__path=spawn",
+    headers: {
+      origin: "https://evil.example.com",
+      "x-forwarded-host": "burnerapp-preview.vercel.app"
+    },
+    body: { scenarioId: "repo-triage" }
+  });
+  assert.equal(res.statusCode, 403);
+  assert.equal(res.json?.error, "CROSS_ORIGIN_FORBIDDEN");
 });

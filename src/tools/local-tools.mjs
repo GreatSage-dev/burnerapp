@@ -1,9 +1,13 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
-const DEFAULT_SANDBOX_ROOT = path.resolve(process.cwd(), "fixtures/sandbox");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const SOURCE_SANDBOX_ROOT = path.resolve(__dirname, "../../fixtures/sandbox");
 
 const SEEDED_AUTH_TOKEN_SOURCE = `import crypto from "node:crypto";
 
@@ -49,11 +53,38 @@ export function legacyDecodeHeader(token) {
 `;
 
 export function resolveSandboxRoot(customRoot) {
-  return customRoot ? path.resolve(customRoot) : DEFAULT_SANDBOX_ROOT;
+  if (customRoot) return path.resolve(customRoot);
+  if (process.env.VERCEL) return path.join(os.tmpdir(), "burnerapp-sandbox");
+  return SOURCE_SANDBOX_ROOT;
+}
+
+function ensureSandboxInitialized(sandboxRoot) {
+  fs.mkdirSync(path.join(sandboxRoot, "demo-repo"), { recursive: true });
+  fs.mkdirSync(path.join(sandboxRoot, "receipts"), { recursive: true });
+
+  if (sandboxRoot !== SOURCE_SANDBOX_ROOT) {
+    const copyPairs = [
+      ["demo-repo", "auth-token.test.mjs"],
+      ["demo-repo", "package.json"],
+      ["receipts", "dinner-receipts.json"]
+    ];
+    for (const [dir, file] of copyPairs) {
+      const dst = path.join(sandboxRoot, dir, file);
+      const src = path.join(SOURCE_SANDBOX_ROOT, dir, file);
+      if (!fs.existsSync(dst) && fs.existsSync(src)) {
+        fs.copyFileSync(src, dst);
+      }
+    }
+    const authPath = path.join(sandboxRoot, "demo-repo", "auth-token.mjs");
+    if (!fs.existsSync(authPath)) {
+      fs.writeFileSync(authPath, SEEDED_AUTH_TOKEN_SOURCE, "utf8");
+    }
+  }
 }
 
 export function resetSandbox(customRoot) {
   const sandboxRoot = resolveSandboxRoot(customRoot);
+  ensureSandboxInitialized(sandboxRoot);
   const authPath = path.join(sandboxRoot, "demo-repo", "auth-token.mjs");
   const csvPath = path.join(sandboxRoot, "receipts", "settlement-export.csv");
 
@@ -298,6 +329,7 @@ function exportSettlementCsv(sandboxRoot, params = {}) {
 
 export async function executeLocalTool(toolName, params = {}, customRoot) {
   const sandboxRoot = resolveSandboxRoot(customRoot);
+  ensureSandboxInitialized(sandboxRoot);
 
   switch (toolName) {
     case "fs_bundle_inspect":

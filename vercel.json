@@ -1,0 +1,20 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "outputDirectory": "public",
+  "functions": {
+    "api/index.mjs": {
+      "includeFiles": "{fixtures/**,public/**}"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/judge",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/api/((?!index\\.mjs).*)",
+      "destination": "/api/index.mjs?__path=$1"
+    }
+  ]
+}

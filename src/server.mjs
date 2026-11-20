@@ -37,7 +37,37 @@ function sendHtml(res, statusCode, html) {
   res.end(html);
 }
 
-function readJsonBody(req, maxBytes = 65_536) {
+async function readJsonBody(req, maxBytes = 65_536) {
+  if (req.body !== undefined) {
+    if (Buffer.isBuffer(req.body)) {
+      if (req.body.length > maxBytes) {
+        throw new Error("PAYLOAD_TOO_LARGE");
+      }
+      const text = req.body.toString("utf8");
+      if (!text.trim()) return {};
+      try {
+        return JSON.parse(text);
+      } catch {
+        throw new Error("INVALID_JSON");
+      }
+    }
+    if (typeof req.body === "string") {
+      if (Buffer.byteLength(req.body, "utf8") > maxBytes) {
+        throw new Error("PAYLOAD_TOO_LARGE");
+      }
+      if (!req.body.trim()) return {};
+      try {
+        return JSON.parse(req.body);
+      } catch {
+        throw new Error("INVALID_JSON");
+      }
+    }
+    if (typeof req.body === "object" && req.body !== null) {
+      return req.body;
+    }
+    return {};
+  }
+
   return new Promise((resolve, reject) => {
     let raw = "";
     let bytes = 0;
@@ -108,19 +138,31 @@ export function createAppServer({
   }
 
   function isAllowedOrigin(req) {
-    const origin = req.headers.origin;
+    const origin = req.headers?.origin;
     if (!origin) return true;
     try {
-      const host = new URL(origin).hostname;
-      return host === "127.0.0.1" || host === "localhost" || host === "::1";
+      const originHost = new URL(origin).hostname.toLowerCase();
+      if (originHost === "127.0.0.1" || originHost === "localhost" || originHost === "::1") {
+        return true;
+      }
+      const rawHost = String(req.headers?.["x-forwarded-host"] || req.headers?.host || "")
+        .split(",")[0]
+        .trim();
+      if (!rawHost) return false;
+      const requestHost = new URL(`http://${rawHost}`).hostname.toLowerCase();
+      return Boolean(requestHost && originHost === requestHost);
     } catch {
       return false;
     }
   }
 
-  const server = http.createServer(async (req, res) => {
+  async function requestHandler(req, res) {
     const url = new URL(req.url || "/", "http://127.0.0.1");
-    const pathname = url.pathname;
+    let pathname = url.pathname;
+    const rewrittenPath = url.searchParams.get("__path");
+    if ((pathname === "/api/index.mjs" || pathname === "/api/index" || pathname === "/api") && rewrittenPath) {
+      pathname = `/api/${rewrittenPath.replace(/^\/+/, "")}`;
+    }
 
     try {
       if (req.method === "POST" && !isAllowedOrigin(req)) {
@@ -241,10 +283,13 @@ export function createAppServer({
       const code = err.message === "PAYLOAD_TOO_LARGE" ? 413 : err.message === "INVALID_JSON" ? 400 : 500;
       sendJson(res, code, { ok: false, error: err.message });
     }
-  });
+  }
+
+  const server = http.createServer(requestHandler);
 
   return {
     server,
+    requestHandler,
     registry,
     tpmTracker,
     sandboxRoot: effectiveSandboxRoot
